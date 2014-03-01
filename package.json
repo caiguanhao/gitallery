@@ -1,0 +1,23 @@
+{
+  "name": "gitallery",
+  "version": "0.0.0",
+  "description": "A git gallery.",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/caiguanhao/gitallery.git"
+  },
+  "keywords": [
+    "git",
+    "gallery",
+    "photo",
+    "github"
+  ],
+  "author": "Cai Guanhao <caiguanhao@gmail.com> (Choi Goon-ho)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/caiguanhao/gitallery/issues"
+  },
+  "devDependencies": {
+    "grunt": "~0.4.2"
+  }
+}
