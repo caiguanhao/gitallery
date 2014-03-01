@@ -1,5 +1,59 @@
 module.exports = function(grunt) {
 
+  grunt.initConfig({
+    less: {
+      gitallery: {
+        files: {
+          'public/css/gitallery.css': [ 'assets/css/gitallery.less' ]
+        }
+      }
+    },
+    connect: {
+      server: {
+        options: {
+          hostname: '*',
+          port: 3000,
+          base: [ 'assets', 'public' ]
+        }
+      }
+    },
+    watch: {
+      options: {
+        livereload: true
+      },
+      grunt: {
+        files: [ 'Gruntfile.js' ]
+      },
+      js: {
+        files: [ 'assets/js/**/*' ]
+      },
+      css: {
+        files: [ 'assets/css/**/*' ],
+        tasks: [ 'less' ]
+      },
+      html: {
+        files: [ 'index.html' ],
+        tasks: [ 'copy-index' ]
+      }
+    }
+  });
+
+  grunt.loadNpmTasks('grunt-contrib-less');
+  grunt.loadNpmTasks('grunt-contrib-connect');
+  grunt.loadNpmTasks('grunt-contrib-watch');
+
+  grunt.registerTask('default', [
+    'less',
+    'copy-index',
+    'connect',
+    'watch'
+  ]);
+
+  grunt.registerTask('copy-index', 'Copy index page', function() {
+    grunt.file.copy('index.html', 'public/index.html');
+    grunt.log.ok('Copied index.html to public/index.html.');
+  });
+
   grunt.registerTask('download-angular', 'Download Angular',
     function(version) {
     var http = require('http');

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html ng-app="gitallery">
+
+<head>
+  <meta charset="UTF-8">
+  <title>gitallery</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="A git gallery.">
+  <meta name="author" content="caiguanhao">
+  <link rel="stylesheet" href="/css/gitallery.css">
+  <!--[if gt IE 9]><!-->
+  <script src="/js/vendor/angular.js"></script>
+  <script src="/js/vendor/angular-route.js"></script>
+  <script src="/js/gitallery.js"></script>
+  <script src="http://localhost:35729/livereload.js"></script>
+  <!--<![endif]-->
+  <script type="text/ng-template" id="index">
+    <div id="wrap">
+      <header>
+        <nav class="navbar navbar-default navbar-fixed-top" role="navigation"
+           data-navbar-id="navbar">
+          <div class="container">
+            <div class="navbar-header">
+              <button type="button" class="navbar-toggle"
+                data-navbar-id="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+              </button>
+              <a class="navbar-brand" href="/">gitallery</a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar">
+              <ul class="nav navbar-nav">
+                <li navbar-link><a href="/#/about">About</a></li>
+              </ul>
+            </div>
+          </div>
+        </nav>
+      </header>
+      <div id="content" class="container" ng-view></div>
+    </div>
+    <footer>
+      <div class="container">
+        <div class="footer text-center">
+          copyright
+        </div>
+      </div>
+    </footer>
+  </script>
+</head>
+
+<body>
+  <!--[if lte IE 9]>
+    <div class="ie-warnings">
+      <b>Your browser is out of date.</b>
+      <br>
+      Please upgrade to IE 10 or use Chrome or Firefox browser.
+      <br>
+      Download Chrome from:
+      <a href="https://www.google.com/chrome/">Google</a> |
+      <a href="http://dl.pconline.com.cn/download/51614-1.html">
+        PCOnline (Windows)
+      </a>
+      <br>
+      Download Firefox from:
+      <a href="http://www.mozilla.org/en-US/firefox/new/">Mozilla</a>
+      <br>
+      You can also view this page on your iPhone or Android.
+    </div>
+  <![endif]-->
+</body>
+
+</html>
