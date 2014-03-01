@@ -3,7 +3,8 @@ var gitallery = angular.module('gitallery', [ 'ngRoute' ]).
 config(['$routeProvider', '$locationProvider',
   function($routeProvider, $locationProvider) {
   $routeProvider.when('/', {
-    templateUrl: 'main'
+    templateUrl: 'main',
+    controller: 'MainController'
   });
   $locationProvider.html5Mode(false);
 }]).
@@ -15,27 +16,48 @@ directive('body', [function() {
   };
 }]).
 
-directive('uploader', ['GitHubAPI', function(GitHubAPI) {
+directive('uploader', ['$parse', function($parse) {
+  return {
+    restrict: 'E',
+    template: '<input type="file">',
+    replace: true,
+    link: function($scope, elem, attrs, controller) {
+      if (!attrs.model) return;
+      $scope.$watchCollection(attrs.model, function(newModel) {
+        if (newModel === undefined) return;
+        if (!newModel || newModel.length === 0) elem.val('');
+      });
+      elem.bind('change', function() {
+        $scope.$apply(function() {
+          var files = [];
+          for (var i = 0; i < elem[0].files.length; i++) {
+            var file = elem[0].files[i];
+            files.push({
+              name: file.name,
+              file: file,
+              content: null
+            });
+          }
+          $parse(attrs.model).assign($scope, files);
+        });
+      });
+    }
+  };
+}]).
+
+directive('fileObject', ['$parse', function($parse) {
   return {
     link: function($scope, elem, attrs, controller) {
-      elem.on('change', function() {
-        var files = elem[0].files;
-        for (var i = 0; i < files.length; i++) {
-          var file = files[i];
-          if (file.type !== 'image/jpeg') continue;
-          var reader = new FileReader();
-          reader.onload = function() {
-            var datauri = reader.result;
-            var base64str = datauri.match(/^data:(.*?);base64,(.*)$/)[2];
-            GitHubAPI.UploadFile(file.name, base64str).then(function() {
-              console.log(arguments)
-            }, function() {
-              console.log(arguments)
-            });
-          };
-          reader.readAsDataURL(file);
-        }
-      });
+      var reader = new FileReader();
+      var file = $parse(attrs.fileObject)($scope);
+      var content = $parse(attrs.fileObject + '.content');
+      reader.onload = function() {
+        var datauri = reader.result;
+        var base64str = datauri.match(/^data:(.*?);base64,(.*)$/)[2];
+        elem.attr('src', datauri);
+        content.assign($scope, base64str);
+      };
+      reader.readAsDataURL(file.file);
     }
   };
 }]).
@@ -55,28 +77,49 @@ service('GitHubAPI', ['$http', '$q', function($http, $q) {
       fileName ];
     return $http.get(uri.join('/'), { headers: this.headers });
   };
-  this.UpdateFile = function(fileName, fileContentBase64Encoded, fileSha) {
+  this.UpdateFile = function(fileName, fileContent, fileSha, message) {
     var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
       fileName ];
     var data = {
-      message: 'test',
-      content: fileContentBase64Encoded
+      message: (message || 'upload files'),
+      content: fileContent
     };
     if (fileSha) data['sha'] = fileSha;
     return $http.put(uri.join('/'), JSON.stringify(data),
       { headers: this.headers });
   };
-  this.UploadFile = function(fileName, fileContentBase64Encoded) {
+  this.UploadFile = function(fileName, fileContent, message) {
     var self = this;
     return this.GetContents(fileName).then(function(response) {
       var fileSha = response.data.sha;
-      return self.UpdateFile(fileName, fileContentBase64Encoded, fileSha);
+      return self.UpdateFile(fileName, fileContent, fileSha, message);
     }, function(response) {
       if (response.status === 404) {
-        return self.UpdateFile(fileName, fileContentBase64Encoded);
+        return self.UpdateFile(fileName, fileContent, null, message);
       }
       return $q.reject(response);
     });
+  };
+}]).
+
+controller('MainController', ['$scope', '$q', 'GitHubAPI',
+  function($scope, $q, GitHubAPI) {
+  $scope.upload = function() {
+    var files = $scope.files;
+    if (!files || files.length === 0) {
+      return alert('No files to upload!');
+    }
+    var promises = [];
+    var message = $scope.message;
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      promises.push(GitHubAPI.UploadFile(file.name, file.content, message));
+    }
+    $q.all(promises).then(function() {
+      console.log(arguments);
+    });
+    $scope.files = null;
+    $scope.message = null;
   };
 }]).
 
