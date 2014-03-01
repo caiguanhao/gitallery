@@ -35,7 +35,8 @@ directive('uploader', ['$parse', function($parse) {
             files.push({
               name: file.name,
               file: file,
-              content: null
+              content: null,
+              message: null
             });
           }
           $parse(attrs.model).assign($scope, files);
@@ -77,11 +78,11 @@ service('GitHubAPI', ['$http', '$q', function($http, $q) {
       fileName ];
     return $http.get(uri.join('/'), { headers: this.headers });
   };
-  this.UpdateFile = function(fileName, fileContent, fileSha, message) {
+  this.UpdateFile = function(fileName, fileContent, message, fileSha) {
     var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
       fileName ];
     var data = {
-      message: (message || 'upload files'),
+      message: message,
       content: fileContent
     };
     if (fileSha) data['sha'] = fileSha;
@@ -92,10 +93,10 @@ service('GitHubAPI', ['$http', '$q', function($http, $q) {
     var self = this;
     return this.GetContents(fileName).then(function(response) {
       var fileSha = response.data.sha;
-      return self.UpdateFile(fileName, fileContent, fileSha, message);
+      return self.UpdateFile(fileName, fileContent, message, fileSha);
     }, function(response) {
       if (response.status === 404) {
-        return self.UpdateFile(fileName, fileContent, null, message);
+        return self.UpdateFile(fileName, fileContent, message, null);
       }
       return $q.reject(response);
     });
@@ -104,22 +105,25 @@ service('GitHubAPI', ['$http', '$q', function($http, $q) {
 
 controller('MainController', ['$scope', '$q', 'GitHubAPI',
   function($scope, $q, GitHubAPI) {
+  $scope.defaultMessageForFileName = function(filename) {
+    return 'Upload ' + filename + '.';
+  };
   $scope.upload = function() {
     var files = $scope.files;
     if (!files || files.length === 0) {
       return alert('No files to upload!');
     }
     var promises = [];
-    var message = $scope.message;
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
+      var message = (file.message ||
+        $scope.defaultMessageForFileName(file.name));
       promises.push(GitHubAPI.UploadFile(file.name, file.content, message));
     }
     $q.all(promises).then(function() {
       console.log(arguments);
     });
     $scope.files = null;
-    $scope.message = null;
   };
 }]).
 
