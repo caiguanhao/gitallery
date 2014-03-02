@@ -3,9 +3,14 @@ var gitallery = angular.module('gitallery',
 
 config(['$routeProvider', '$locationProvider',
   function($routeProvider, $locationProvider) {
-  $routeProvider.when('/', {
+  $routeProvider.
+  when('/', {
     templateUrl: 'main',
     controller: 'MainController'
+  }).
+  otherwise({
+    title: '404 Page Not Found',
+    templateUrl: '_404'
   });
   $locationProvider.html5Mode(false);
 }]).
