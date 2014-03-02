@@ -114,6 +114,28 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
     var uri = [ this.API, 'user', 'repos' ];
     return $http.get(uri.join('/'), { headers: this.headers() });
   };
+  this.GetAllRepositories = function() {
+    var self = this;
+    var deferred = $q.defer();
+    var promises = [];
+    promises.push(this.GetRepositories());
+    this.GetOrganizations().then(function(response) {
+      var orgs = response.data;
+      for (var i = 0; i < orgs.length; i++) {
+        promises.push(self.GetOrganizationRepositories(orgs[i].login));
+      }
+      deferred.resolve($q.all(promises));
+    });
+    return deferred.promise;
+  };
+  this.GetOrganizations = function() {
+    var uri = [ this.API, 'user', 'orgs' ];
+    return $http.get(uri.join('/'), { headers: this.headers() });
+  };
+  this.GetOrganizationRepositories = function(orgname) {
+    var uri = [ this.API, 'orgs', orgname, 'repos' ];
+    return $http.get(uri.join('/'), { headers: this.headers() });
+  };
   this.GetContents = function(fileName) {
     var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
       fileName ];
@@ -223,8 +245,12 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   var update = function() {
     $scope.accounts = LocalStorage('accounts');
     $scope.active = LocalStorage('accounts.active');
-    GitHubAPI.GetRepositories().then(function(response) {
-      $scope.repositories = response.data;
+    GitHubAPI.GetAllRepositories().then(function(response) {
+      var repositories = [];
+      for (var i = 0; i < response.length; i++) {
+        repositories = repositories.concat(response[i].data);
+      }
+      $scope.repositories = repositories;
     }, function(){
       $scope.repositories = null;
     });
