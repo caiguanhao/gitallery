@@ -115,11 +115,22 @@
         </div>
         <h2>Select repository ({{repositories|length}}):</h2>
         <div class="list-group" ng-if="repositories">
+          <div class="list-group-item">
+            <div class="input-group">
+              <input class="form-control" type="text" placeholder="Find..."
+                ng-model="search.name">
+              <span class="input-group-btn">
+                <button class="btn btn-default" type="button"
+                  ng-click="search.name=''">Clear</button>
+              </span>
+            </div>
+          </div>
           <a href class="list-group-item" ng-click="updateRepositories()"
             ng-if="repositoriesReadFromCache">
             <em>This list is read from cache,
             click here to re-download it.</em></a>
-          <a href class="list-group-item" ng-repeat="repo in repositories"
+          <a href class="list-group-item"
+            ng-repeat="repo in repositories|filter:search"
             ng-class="{ active: activeFullName === repo.full_name }"
             ng-bind="repo.full_name" ng-click="selectRepo(repo)"></a>
         </div>
