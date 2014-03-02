@@ -23,6 +23,23 @@ directive('body', [function() {
   };
 }]).
 
+directive('navbarLink', ['$location', function($location) {
+  return function(scope, element, attrs) {
+    scope.$on('$routeChangeSuccess', function(event, current, previous) {
+      var links = element.find('a');
+      if (links.length === 0) return;
+      var href = links.attr('href').replace(/^\/#!?/, '');
+      var url = $location.url();
+      if ((href === '/' && url === href) ||
+        (href !== '/' && url.substr(0, href.length) === href)) {
+        element.addClass('active');
+      } else {
+        element.removeClass('active');
+      }
+    });
+  };
+}]).
+
 directive('uploader', ['$parse', function($parse) {
   return {
     restrict: 'E',
