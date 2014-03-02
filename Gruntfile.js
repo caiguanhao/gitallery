@@ -49,8 +49,26 @@ module.exports = function(grunt) {
     'watch'
   ]);
 
+  function get_local_ip() {
+    var interfaces = require('os').networkInterfaces();
+    for (var dev in interfaces) {
+      if (dev.substr(0, 2) === 'en') {
+        var iface = interfaces[dev];
+        for (var i = 0; i < iface.length; i++) {
+          if (iface[i].family === 'IPv4') {
+            return iface[i].address;
+          }
+        }
+      }
+    }
+    return 'localhost';
+  }
+  var local_ip = get_local_ip();
+
   grunt.registerTask('copy-index', 'Copy index page', function() {
-    grunt.file.copy('index.html', 'public/index.html');
+    var index = grunt.file.read('index.html');
+    index = index.replace('{%LOCAL-IP%}', local_ip);
+    grunt.file.write('public/index.html', index);
     grunt.log.ok('Copied index.html to public/index.html.');
   });
 
