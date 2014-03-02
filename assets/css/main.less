@@ -34,3 +34,19 @@ footer {
   max-height: 150px;
   margin: 5px 0;
 }
+
+// force not to collapse nav
+.navbar-nav {
+  float: left;
+  margin: 0;
+}
+.navbar-nav > li {
+  float: left;
+}
+.navbar-nav > li > a {
+  padding-top: 15px;
+  padding-bottom: 15px;
+}
+.navbar-nav.navbar-right:last-child {
+  margin-right: -15px;
+}
