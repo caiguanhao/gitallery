@@ -1,4 +1,5 @@
-var gitallery = angular.module('gitallery', [ 'ngRoute' ]).
+var gitallery = angular.module('gitallery',
+  [ 'ngRoute', 'angularFileUpload' ]).
 
 config(['$routeProvider', '$locationProvider',
   function($routeProvider, $locationProvider) {
@@ -42,7 +43,8 @@ directive('uploader', ['$parse', function($parse) {
               name: file.name,
               file: file,
               content: null,
-              message: null
+              message: null,
+              progress: 0
             });
           }
           $parse(attrs.model).assign($scope, files);
@@ -69,7 +71,7 @@ directive('fileObject', ['$parse', function($parse) {
   };
 }]).
 
-service('GitHubAPI', ['$http', '$q', function($http, $q) {
+service('GitHubAPI', ['$http', '$q', '$upload', function($http, $q, $upload) {
   var lS = window.localStorage;
 
   this.API = 'https://api.github.com';
@@ -92,8 +94,12 @@ service('GitHubAPI', ['$http', '$q', function($http, $q) {
       content: fileContent
     };
     if (fileSha) data['sha'] = fileSha;
-    return $http.put(uri.join('/'), JSON.stringify(data),
-      { headers: this.headers });
+    return $upload.http({
+      url: uri.join('/'),
+      method: 'PUT',
+      headers: this.headers,
+      data: JSON.stringify(data)
+    });
   };
   this.UploadFile = function(fileName, fileContent, message) {
     var self = this;
@@ -119,17 +125,38 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     if (!files || files.length === 0) {
       return alert('No files to upload!');
     }
-    var promises = [];
+    var deferred = $q.defer();
+    var promise = deferred.promise;
+    deferred.resolve();
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
       var message = (file.message ||
         $scope.defaultMessageForFileName(file.name));
-      promises.push(GitHubAPI.UploadFile(file.name, file.content, message));
+      var then = (function(file, message) {
+        return function() {
+          var deferred = $q.defer();
+          GitHubAPI.UploadFile(file.name, file.content, message)
+            .then(function(response) {
+              deferred.resolve(response);
+            }, function(response) {
+              deferred.reject(response);
+            }, function(event) {
+              var progress = parseInt(100.0 * event.loaded / event.total);
+              file.progress = Math.min(100, progress);
+            });
+          return deferred.promise;
+        };
+      })(file, message);
+      promise = promise.then(then);
     }
-    $q.all(promises).then(function() {
-      console.log(arguments);
+    promise = promise.then(function() {
+      console.log('come to an end', arguments);
+    }, function() {
+      console.log('come to an error', arguments);
     });
-    $scope.files = null;
+    promise['finally'](function() {
+      $scope.files = null;
+    });
   };
 }]).
 

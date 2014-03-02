@@ -9,8 +9,10 @@
   <meta name="author" content="caiguanhao">
   <link rel="stylesheet" href="/css/gitallery.css">
   <!--[if gt IE 9]><!-->
+  <script src="/js/vendor/angular-file-upload-shim.js"></script>
   <script src="/js/vendor/angular.js"></script>
   <script src="/js/vendor/angular-route.js"></script>
+  <script src="/js/vendor/angular-file-upload.js"></script>
   <script src="/js/vendor/filesize.js"></script>
   <script src="/js/gitallery.js"></script>
   <script src="http://localhost:35729/livereload.js"></script>
@@ -82,6 +84,8 @@
               <div class="form-group">
                 <label>File Size</label>
                 {{file.file.size|filesize}}
+                <label>Upload Progress</label>
+                {{file.progress}}%
               </div>
             </div>
           </div>
