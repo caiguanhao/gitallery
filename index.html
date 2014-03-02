@@ -113,6 +113,11 @@
             ng-click="setActive($index)"
             ng-repeat="account in accounts" ng-bind="account.name"></a>
         </div>
+        <h2>Select repository:</h2>
+        <div class="list-group">
+          <a href class="list-group-item" ng-repeat="repo in repositories"
+            ng-bind="repo.full_name"></a>
+        </div>
         <h2>Or add one:</h2>
         <form class="form row col-sm-8" role="form" ng-submit="add()">
           <div class="form-group">

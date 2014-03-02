@@ -97,20 +97,27 @@ directive('fileObject', ['$parse', function($parse) {
   };
 }]).
 
-service('GitHubAPI', ['$http', '$q', '$upload', function($http, $q, $upload) {
+service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
+  function($http, $q, $upload, Accounts) {
   var lS = window.localStorage;
 
   this.API = 'https://api.github.com';
   this.UserName = lS['username'];
   this.UserRepo = lS['userrepo'];
-  this.headers = {
-    "Authorization": "token " + lS['token']
+  this.headers = function() {
+    return {
+      "Authorization": "token " + Accounts.getCurrentAccount()
+    };
   };
 
+  this.GetRepositories = function() {
+    var uri = [ this.API, 'user', 'repos' ];
+    return $http.get(uri.join('/'), { headers: this.headers() });
+  };
   this.GetContents = function(fileName) {
     var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
       fileName ];
-    return $http.get(uri.join('/'), { headers: this.headers });
+    return $http.get(uri.join('/'), { headers: this.headers() });
   };
   this.UpdateFile = function(fileName, fileContent, message, fileSha) {
     var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
@@ -123,7 +130,7 @@ service('GitHubAPI', ['$http', '$q', '$upload', function($http, $q, $upload) {
     return $upload.http({
       url: uri.join('/'),
       method: 'PUT',
-      headers: this.headers,
+      headers: this.headers(),
       data: JSON.stringify(data)
     });
   };
@@ -155,6 +162,12 @@ service('LocalStorage', ['$window', function($window) {
       return angular.fromJson($window.localStorage[name]);
     } catch(e) {}
     return null;
+  };
+}]).
+
+service('Accounts', ['LocalStorage', function(LocalStorage) {
+  this.getCurrentAccount = function() {
+    return LocalStorage('accounts.active');
   };
 }]).
 
@@ -204,11 +217,17 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
 }]).
 
 controller('AccountsController', ['$scope', '$window', 'LocalStorage',
-  function($scope, $window, LocalStorage) {
+  'GitHubAPI',
+  function($scope, $window, LocalStorage, GitHubAPI) {
 
   var update = function() {
     $scope.accounts = LocalStorage('accounts');
     $scope.active = LocalStorage('accounts.active');
+    GitHubAPI.GetRepositories().then(function(response) {
+      $scope.repositories = response.data;
+    }, function(){
+      $scope.repositories = null;
+    });
   };
   update();
 
