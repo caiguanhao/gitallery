@@ -113,10 +113,24 @@
             ng-click="setActive($index)"
             ng-repeat="account in accounts" ng-bind="account.name"></a>
         </div>
-        <h2>Select repository:</h2>
-        <div class="list-group">
+        <h2>Select repository ({{repositories|length}}):</h2>
+        <div class="list-group" ng-if="repositories">
           <a href class="list-group-item" ng-repeat="repo in repositories"
             ng-bind="repo.full_name"></a>
+        </div>
+        <div class="list-group" ng-if="!repositories"
+          ng-switch on="repoLoadStatus">
+          <div class="list-group-item" ng-switch-when="loading">
+            Loading repositories...
+          </div>
+          <div class="list-group-item list-group-item-danger"
+            ng-switch-when="unauthorized">
+            Authentication failed. Please check if token is valid.
+          </div>
+          <div class="list-group-item list-group-item-danger"
+            ng-switch-default>
+            {{repoLoadStatus}}.
+          </div>
         </div>
         <h2>Or add one:</h2>
         <form class="form row col-sm-8" role="form" ng-submit="add()">

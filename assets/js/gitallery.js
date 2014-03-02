@@ -19,6 +19,12 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
+filter('length', function() {
+  return function(array) {
+    return array instanceof Array ? array.length : 0;
+  };
+}).
+
 filter('filesize', function() {
   return function(size) {
     return filesize(size, { base: 2 });
@@ -125,6 +131,8 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
         promises.push(self.GetOrganizationRepositories(orgs[i].login));
       }
       deferred.resolve($q.all(promises));
+    }, function(response) {
+      deferred.reject(response);
     });
     return deferred.promise;
   };
@@ -245,13 +253,20 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   var update = function() {
     $scope.accounts = LocalStorage('accounts');
     $scope.active = LocalStorage('accounts.active');
+    $scope.repositories = null;
+    $scope.repoLoadStatus = 'loading';
     GitHubAPI.GetAllRepositories().then(function(response) {
       var repositories = [];
       for (var i = 0; i < response.length; i++) {
         repositories = repositories.concat(response[i].data);
       }
       $scope.repositories = repositories;
-    }, function(){
+    }, function(response) {
+      if (response.status === 401) {
+        $scope.repoLoadStatus = 'unauthorized';
+      } else {
+        $scope.repoLoadStatus = response.data.message || 'Unknown Error';
+      }
       $scope.repositories = null;
     });
   };
