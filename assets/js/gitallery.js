@@ -254,6 +254,7 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   'GitHubAPI',
   function($scope, $window, LocalStorage, GitHubAPI) {
 
+  $scope.repositoriesReadFromCache = true;
   $scope.updateRepositories = function() {
     $scope.repositories = null;
     GitHubAPI.GetAllRepositories().then(function(response) {
@@ -287,14 +288,13 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
     $scope.activeFullName = LocalStorage('accounts.active.full_name');
     $scope.repositories = LocalStorage('accounts.active.repositories');
     $scope.repoLoadStatus = 'loading';
-    if ($scope.repositories) {
-      $scope.repositoriesReadFromCache = true;
-    } else {
+    if (!$scope.repositories) {
       $scope.updateRepositories();
     }
   };
   update();
 
+  $scope.predicate = '';
   $scope.add = function() {
     var accounts = LocalStorage('accounts') || [];
     accounts.push({

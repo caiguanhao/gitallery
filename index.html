@@ -125,12 +125,23 @@
               </span>
             </div>
           </div>
+          <div class="list-group-item btn-group btn-group-justified">
+            <a class="btn btn-default"
+              ng-class="{active: predicate === ''}"
+              ng-click="predicate=''">Name</a>
+            <a class="btn btn-default"
+              ng-class="{active: predicate === 'id' && reverse === false}"
+              ng-click="predicate='id';reverse=false">Oldest</a>
+            <a class="btn btn-default"
+              ng-class="{active: predicate === 'id' && reverse === true}"
+              ng-click="predicate='id';reverse=true">Newest</a>
+          </div>
           <a href class="list-group-item" ng-click="updateRepositories()"
             ng-if="repositoriesReadFromCache">
-            <em>This list is read from cache,
-            click here to re-download it.</em></a>
+            <span class="glyphicon glyphicon-refresh"></span> <em>This list
+            is read from cache, click here to re-download it.</em></a>
           <a href class="list-group-item"
-            ng-repeat="repo in repositories|filter:search"
+            ng-repeat="repo in repositories|filter:search|orderBy:predicate:reverse"
             ng-class="{ active: activeFullName === repo.full_name }"
             ng-bind="repo.full_name" ng-click="selectRepo(repo)"></a>
         </div>
