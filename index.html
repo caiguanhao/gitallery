@@ -109,14 +109,19 @@
         <h2>Select account to use:</h2>
         <div class="list-group">
           <a href class="list-group-item"
-            ng-class="{ active: active === account.token }"
+            ng-class="{ active: activeToken === account.token }"
             ng-click="setActive($index)"
             ng-repeat="account in accounts" ng-bind="account.name"></a>
         </div>
         <h2>Select repository ({{repositories|length}}):</h2>
         <div class="list-group" ng-if="repositories">
+          <a href class="list-group-item" ng-click="updateRepositories()"
+            ng-if="repositoriesReadFromCache">
+            <em>This list is read from cache,
+            click here to re-download it.</em></a>
           <a href class="list-group-item" ng-repeat="repo in repositories"
-            ng-bind="repo.full_name"></a>
+            ng-class="{ active: activeFullName === repo.full_name }"
+            ng-bind="repo.full_name" ng-click="selectRepo(repo)"></a>
         </div>
         <div class="list-group" ng-if="!repositories"
           ng-switch on="repoLoadStatus">

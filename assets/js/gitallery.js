@@ -105,14 +105,14 @@ directive('fileObject', ['$parse', function($parse) {
 
 service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
   function($http, $q, $upload, Accounts) {
-  var lS = window.localStorage;
 
   this.API = 'https://api.github.com';
-  this.UserName = lS['username'];
-  this.UserRepo = lS['userrepo'];
+  this.FullName = function() {
+    return Accounts.GetCurrentAccount().FullName;
+  }
   this.headers = function() {
     return {
-      "Authorization": "token " + Accounts.getCurrentAccount()
+      "Authorization": "token " + Accounts.GetCurrentAccount().Token
     };
   };
 
@@ -145,12 +145,12 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
     return $http.get(uri.join('/'), { headers: this.headers() });
   };
   this.GetContents = function(fileName) {
-    var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
+    var uri = [ this.API, 'repos', this.FullName(), 'contents',
       fileName ];
     return $http.get(uri.join('/'), { headers: this.headers() });
   };
   this.UpdateFile = function(fileName, fileContent, message, fileSha) {
-    var uri = [ this.API, 'repos', this.UserName, this.UserRepo, 'contents',
+    var uri = [ this.API, 'repos', this.FullName(), 'contents',
       fileName ];
     var data = {
       message: message,
@@ -196,8 +196,11 @@ service('LocalStorage', ['$window', function($window) {
 }]).
 
 service('Accounts', ['LocalStorage', function(LocalStorage) {
-  this.getCurrentAccount = function() {
-    return LocalStorage('accounts.active');
+  this.GetCurrentAccount = function() {
+    return {
+      FullName: LocalStorage('accounts.active.token'),
+      Token: LocalStorage('accounts.active.token')
+    };
   };
 }]).
 
@@ -250,11 +253,8 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   'GitHubAPI',
   function($scope, $window, LocalStorage, GitHubAPI) {
 
-  var update = function() {
-    $scope.accounts = LocalStorage('accounts');
-    $scope.active = LocalStorage('accounts.active');
+  $scope.updateRepositories = function() {
     $scope.repositories = null;
-    $scope.repoLoadStatus = 'loading';
     GitHubAPI.GetAllRepositories().then(function(response) {
       var repositories = [];
       for (var i = 0; i < response.length; i++) {
@@ -268,7 +268,29 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
         $scope.repoLoadStatus = response.data.message || 'Unknown Error';
       }
       $scope.repositories = null;
+    }).finally(function() {
+      LocalStorage('accounts.active.repositories', $scope.repositories);
+      $scope.repositoriesReadFromCache = false;
     });
+  };
+
+  var clean = function() {
+    LocalStorage('accounts.active.token', null);
+    LocalStorage('accounts.active.full_name', null);
+    LocalStorage('accounts.active.repositories', null);
+  };
+
+  var update = function() {
+    $scope.accounts = LocalStorage('accounts');
+    $scope.activeToken = LocalStorage('accounts.active.token');
+    $scope.activeFullName = LocalStorage('accounts.active.full_name');
+    $scope.repositories = LocalStorage('accounts.active.repositories');
+    $scope.repoLoadStatus = 'loading';
+    if ($scope.repositories) {
+      $scope.repositoriesReadFromCache = true;
+    } else {
+      $scope.updateRepositories();
+    }
   };
   update();
 
@@ -284,9 +306,14 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   $scope.setActive = function(index) {
     var accounts = LocalStorage('accounts') || [];
     if (index > -1 && index < accounts.length) {
-      LocalStorage('accounts.active', accounts[index].token);
+      clean();
+      LocalStorage('accounts.active.token', accounts[index].token);
       update();
     }
+  };
+  $scope.selectRepo = function(repo) {
+    LocalStorage('accounts.active.full_name', repo.full_name);
+    update();
   };
 }]).
 
