@@ -121,7 +121,8 @@
                 ng-model="search.name">
               <span class="input-group-btn">
                 <button class="btn btn-default" type="button"
-                  ng-click="search.name=''">Clear</button>
+                  ng-click="search.name=''"
+                  ng-disabled="!search.name">Clear</button>
               </span>
             </div>
           </div>
@@ -170,7 +171,8 @@
               ng-model="name" placeholder="Name (optional)">
           </div>
           <div class="form-group">
-            <input type="submit" class="btn btn-default" value="Add">
+            <input type="submit" class="btn btn-default" value="Add Account"
+              ng-disabled="!token">
           </div>
         </form>
       </div>
