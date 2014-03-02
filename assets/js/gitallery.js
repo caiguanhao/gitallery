@@ -9,6 +9,12 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
+filter('filesize', function() {
+  return function(size) {
+    return filesize(size, { base: 2 });
+  };
+}).
+
 directive('body', [function() {
   return {
     restrict: 'E',
