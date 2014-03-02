@@ -110,15 +110,21 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
   this.FullName = function() {
     return Accounts.GetCurrentAccount().FullName;
   }
-  this.headers = function() {
+  this.Headers = function() {
     return {
       "Authorization": "token " + Accounts.GetCurrentAccount().Token
     };
   };
+  this.BuildURL = function(/* ... */) {
+    return [this.API].concat(Array.prototype.slice.apply(arguments)).join('/');
+  };
+  this.Get = function(/* ... */) {
+    var url = this.BuildURL.apply(this, arguments);
+    return $http.get(url, { headers: this.Headers() });
+  };
 
   this.GetRepositories = function() {
-    var uri = [ this.API, 'user', 'repos' ];
-    return $http.get(uri.join('/'), { headers: this.headers() });
+    return this.Get('user', 'repos');
   };
   this.GetAllRepositories = function() {
     var self = this;
@@ -137,30 +143,25 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
     return deferred.promise;
   };
   this.GetOrganizations = function() {
-    var uri = [ this.API, 'user', 'orgs' ];
-    return $http.get(uri.join('/'), { headers: this.headers() });
+    return this.Get('user', 'orgs');
   };
   this.GetOrganizationRepositories = function(orgname) {
-    var uri = [ this.API, 'orgs', orgname, 'repos' ];
-    return $http.get(uri.join('/'), { headers: this.headers() });
+    return this.Get('orgs', orgname, 'repos');
   };
   this.GetContents = function(fileName) {
-    var uri = [ this.API, 'repos', this.FullName(), 'contents',
-      fileName ];
-    return $http.get(uri.join('/'), { headers: this.headers() });
+    return this.Get('repos', this.FullName(), 'contents', fileName);
   };
   this.UpdateFile = function(fileName, fileContent, message, fileSha) {
-    var uri = [ this.API, 'repos', this.FullName(), 'contents',
-      fileName ];
+    var url = this.BuildURL('repos', this.FullName(), 'contents', fileName);
     var data = {
       message: message,
       content: fileContent
     };
     if (fileSha) data['sha'] = fileSha;
     return $upload.http({
-      url: uri.join('/'),
+      url: url,
       method: 'PUT',
-      headers: this.headers(),
+      headers: this.Headers(),
       data: JSON.stringify(data)
     });
   };
