@@ -8,6 +8,10 @@ config(['$routeProvider', '$locationProvider',
     templateUrl: 'main',
     controller: 'MainController'
   }).
+  when('/accounts', {
+    templateUrl: 'accounts',
+    controller: 'AccountsController'
+  }).
   otherwise({
     title: '404 Page Not Found',
     templateUrl: '_404'
@@ -137,6 +141,23 @@ service('GitHubAPI', ['$http', '$q', '$upload', function($http, $q, $upload) {
   };
 }]).
 
+service('LocalStorage', ['$window', function($window) {
+  return function(category, setValue) {
+    try {
+      var name = 'gitallery.' + category;
+      if (setValue !== undefined) {
+        if (setValue === null) {
+          delete $window.localStorage[name];
+        } else {
+          $window.localStorage[name] = angular.toJson(setValue);
+        }
+      }
+      return angular.fromJson($window.localStorage[name]);
+    } catch(e) {}
+    return null;
+  };
+}]).
+
 controller('MainController', ['$scope', '$q', 'GitHubAPI',
   function($scope, $q, GitHubAPI) {
   $scope.defaultMessageForFileName = function(filename) {
@@ -179,6 +200,33 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     promise['finally'](function() {
       $scope.files = null;
     });
+  };
+}]).
+
+controller('AccountsController', ['$scope', '$window', 'LocalStorage',
+  function($scope, $window, LocalStorage) {
+
+  var update = function() {
+    $scope.accounts = LocalStorage('accounts');
+    $scope.active = LocalStorage('accounts.active');
+  };
+  update();
+
+  $scope.add = function() {
+    var accounts = LocalStorage('accounts') || [];
+    accounts.push({
+      name: $scope.name,
+      token: $scope.token
+    });
+    LocalStorage('accounts', accounts);
+    update();
+  };
+  $scope.setActive = function(index) {
+    var accounts = LocalStorage('accounts') || [];
+    if (index > -1 && index < accounts.length) {
+      LocalStorage('accounts.active', accounts[index].token);
+      update();
+    }
   };
 }]).
 
