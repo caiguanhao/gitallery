@@ -179,6 +179,9 @@
         </div>
         <div class="list-group" ng-if="!repositories"
           ng-switch on="repoLoadStatus">
+          <div class="list-group-item" ng-switch-when="initial">
+            Select an account to list repositories.
+          </div>
           <div class="list-group-item" ng-switch-when="loading">
             Loading repositories...
           </div>

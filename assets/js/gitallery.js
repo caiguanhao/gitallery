@@ -250,13 +250,15 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
   };
 }]).
 
-controller('AccountsController', ['$scope', '$window', 'LocalStorage',
-  'GitHubAPI',
-  function($scope, $window, LocalStorage, GitHubAPI) {
+controller('AccountsController', ['$scope', '$window', '$filter',
+  'LocalStorage', 'GitHubAPI',
+  function($scope, $window, $filter, LocalStorage, GitHubAPI) {
 
   $scope.repositoriesReadFromCache = true;
   $scope.updateRepositories = function() {
     $scope.repositories = null;
+    if (!$scope.activeToken) return;
+    $scope.repoLoadStatus = 'loading';
     GitHubAPI.GetAllRepositories().then(function(response) {
       var repositories = [];
       for (var i = 0; i < response.length; i++) {
@@ -287,7 +289,7 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
     $scope.activeToken = LocalStorage('accounts.active.token');
     $scope.activeFullName = LocalStorage('accounts.active.full_name');
     $scope.repositories = LocalStorage('accounts.active.repositories');
-    $scope.repoLoadStatus = 'loading';
+    $scope.repoLoadStatus = 'initial';
     if (!$scope.repositories) {
       $scope.updateRepositories();
     }
@@ -296,18 +298,28 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
 
   $scope.predicate = '';
   $scope.add = function() {
+    var token = $scope.token;
+    if (!/^[a-f0-9]{1,40}$/.test(token)) return alert('Not a valid token.');
+    if ($scope.index(token) !== -1) return alert('Already added.');
     var accounts = LocalStorage('accounts') || [];
+    var name = $scope.name;
+    if (!name) name = $filter('date')(new Date, 'yyyy-MM-dd HH:mm:ss');
     accounts.push({
-      name: $scope.name,
-      token: $scope.token
+      name: name,
+      token: token
     });
     LocalStorage('accounts', accounts);
+    LocalStorage('accounts.active.token', token);
     update();
+    $scope.name = null;
+    $scope.token = null;
   };
-  $scope.index = function() {
+  $scope.index = function(token) {
     if (!($scope.accounts instanceof Array)) return -1;
     for (var i = 0; i < $scope.accounts.length; i++) {
-      if ($scope.activeToken === $scope.accounts[i].token) return i;
+      if ((token || $scope.activeToken) === $scope.accounts[i].token) {
+        return i;
+      }
     }
     return -1;
   }
@@ -324,6 +336,9 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
   $scope.remove = function() {
     var index = $scope.index();
     if (index === -1) return;
+    if ($scope.accounts[index].token === $scope.activeToken) {
+      LocalStorage('accounts.active.token', null);
+    }
     $scope.accounts.splice(index, 1);
     LocalStorage('accounts', $scope.accounts);
     update();
