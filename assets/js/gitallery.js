@@ -199,7 +199,7 @@ service('LocalStorage', ['$window', function($window) {
 service('Accounts', ['LocalStorage', function(LocalStorage) {
   this.GetCurrentAccount = function() {
     return {
-      FullName: LocalStorage('accounts.active.token'),
+      FullName: LocalStorage('accounts.active.full_name'),
       Token: LocalStorage('accounts.active.token')
     };
   };
