@@ -304,6 +304,30 @@ controller('AccountsController', ['$scope', '$window', 'LocalStorage',
     LocalStorage('accounts', accounts);
     update();
   };
+  $scope.index = function() {
+    if (!($scope.accounts instanceof Array)) return -1;
+    for (var i = 0; i < $scope.accounts.length; i++) {
+      if ($scope.activeToken === $scope.accounts[i].token) return i;
+    }
+    return -1;
+  }
+  $scope.rename = function() {
+    var index = $scope.index();
+    if (index === -1) return;
+    var account = $scope.accounts[index];
+    var newName = $window.prompt('Enter new name:', account.name);
+    if (!newName) return;
+    account.name = newName;
+    LocalStorage('accounts', $scope.accounts);
+    update();
+  };
+  $scope.remove = function() {
+    var index = $scope.index();
+    if (index === -1) return;
+    $scope.accounts.splice(index, 1);
+    LocalStorage('accounts', $scope.accounts);
+    update();
+  };
   $scope.setActive = function(index) {
     var accounts = LocalStorage('accounts') || [];
     if (index > -1 && index < accounts.length) {

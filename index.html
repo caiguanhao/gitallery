@@ -105,14 +105,45 @@
   </script>
   <script type="text/ng-template" id="accounts">
     <div class="row">
-      <div class="col-sm-8 col-sm-offset-2">
+      <div class="col-sm-6">
         <h2>Select account to use:</h2>
         <div class="list-group">
+          <div class="list-group-item"
+            ng-if="!accounts || accounts.length === 0">
+            No accounts set.
+          </div>
           <a href class="list-group-item"
+            ng-if="accounts && accounts.length > 0"
             ng-class="{ active: activeToken === account.token }"
             ng-click="setActive($index)"
-            ng-repeat="account in accounts" ng-bind="account.name"></a>
+            ng-repeat="account in accounts"
+            ng-bind="account.name||'(unnamed)'"></a>
         </div>
+        <div class="btn-group">
+          <a href class="btn btn-default"
+            ng-class="{disabled: index() === -1}"
+            ng-click="rename()">Change Name</a>
+          <a href class="btn btn-default"
+            ng-class="{disabled: index() === -1}"
+            ng-click="remove()">Remove Selected</a>
+        </div>
+        <h2>Or add one:</h2>
+        <form class="form" role="form" ng-submit="add()">
+          <div class="form-group">
+            <input type="text" class="form-control"
+              ng-model="token" placeholder="Token">
+          </div>
+          <div class="form-group">
+            <input type="text" class="form-control"
+              ng-model="name" placeholder="Name (optional)">
+          </div>
+          <div class="form-group">
+            <input type="submit" class="btn btn-default" value="Add Account"
+              ng-disabled="!token">
+          </div>
+        </form>
+      </div>
+      <div class="col-sm-6">
         <h2>Select repository ({{repositories|length}}):</h2>
         <div class="list-group" ng-if="repositories">
           <div class="list-group-item">
@@ -160,21 +191,6 @@
             {{repoLoadStatus}}.
           </div>
         </div>
-        <h2>Or add one:</h2>
-        <form class="form row col-sm-8" role="form" ng-submit="add()">
-          <div class="form-group">
-            <input type="text" class="form-control"
-              ng-model="token" placeholder="Token">
-          </div>
-          <div class="form-group">
-            <input type="text" class="form-control"
-              ng-model="name" placeholder="Name (optional)">
-          </div>
-          <div class="form-group">
-            <input type="submit" class="btn btn-default" value="Add Account"
-              ng-disabled="!token">
-          </div>
-        </form>
       </div>
     </div>
   </script>
