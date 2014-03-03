@@ -115,7 +115,7 @@
           <a href class="list-group-item"
             ng-if="accounts && accounts.length > 0"
             ng-class="{ active: activeToken === account.token }"
-            ng-click="setActive($index)"
+            ng-click="selectAccount($index)"
             ng-repeat="account in accounts"
             ng-bind="account.name||'(unnamed)'"></a>
         </div>
@@ -146,6 +146,14 @@
       <div class="col-sm-6">
         <h2>Select repository ({{repositories|length}}):</h2>
         <div class="list-group" ng-if="repositories">
+          <div class="list-group-item list-group-item-danger"
+            ng-if="activeFullNameIndex() === -1">
+            You haven't selected any repository yet.
+          </div>
+          <div class="list-group-item list-group-item-success"
+            ng-if="activeFullNameIndex() !== -1">
+            Current selection: {{activeFullName}}
+          </div>
           <div class="list-group-item">
             <div class="input-group">
               <input class="form-control" type="text" placeholder="Find..."
@@ -173,7 +181,8 @@
             <span class="glyphicon glyphicon-refresh"></span> <em>This list
             is read from cache, click here to re-download it.</em></a>
           <a href class="list-group-item"
-            ng-repeat="repo in repositories|filter:search|orderBy:predicate:reverse"
+            ng-repeat="repo in repositories|filter:search|
+            orderBy:predicate:reverse"
             ng-class="{ active: activeFullName === repo.full_name }"
             ng-bind="repo.full_name" ng-click="selectRepo(repo)"></a>
         </div>

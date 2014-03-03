@@ -309,7 +309,7 @@ controller('AccountsController', ['$scope', '$window', '$filter',
       token: token
     });
     LocalStorage('accounts', accounts);
-    LocalStorage('accounts.active.token', token);
+    $scope.selectAccount();
     update();
     $scope.name = null;
     $scope.token = null;
@@ -337,14 +337,16 @@ controller('AccountsController', ['$scope', '$window', '$filter',
     var index = $scope.index();
     if (index === -1) return;
     if ($scope.accounts[index].token === $scope.activeToken) {
+      clean();
       LocalStorage('accounts.active.token', null);
     }
     $scope.accounts.splice(index, 1);
     LocalStorage('accounts', $scope.accounts);
     update();
   };
-  $scope.setActive = function(index) {
+  $scope.selectAccount = function(index) {
     var accounts = LocalStorage('accounts') || [];
+    if (index === undefined) index = accounts.length - 1;
     if (index > -1 && index < accounts.length) {
       clean();
       LocalStorage('accounts.active.token', accounts[index].token);
@@ -354,6 +356,15 @@ controller('AccountsController', ['$scope', '$window', '$filter',
   $scope.selectRepo = function(repo) {
     LocalStorage('accounts.active.full_name', repo.full_name);
     update();
+  };
+  $scope.activeFullNameIndex = function() {
+    if (!($scope.repositories instanceof Array)) return -1;
+    for (var i = 0; i < $scope.repositories.length; i++) {
+      if ($scope.activeFullName === $scope.repositories[i].full_name) {
+        return i;
+      }
+    }
+    return -1;
   };
 }]).
 
