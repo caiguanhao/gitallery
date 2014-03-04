@@ -13,6 +13,7 @@
   <script src="/js/vendor/angular.js"></script>
   <script src="/js/vendor/angular-route.js"></script>
   <script src="/js/vendor/angular-file-upload.js"></script>
+  <script src="/js/vendor/FileAPI.html5.js"></script>
   <script src="/js/vendor/filesize.js"></script>
   <script src="/js/gitallery.js"></script>
   <script src="http://{%LOCAL-IP%}:35729/livereload.js"></script>
@@ -81,10 +82,18 @@
                   placeholder="{{defaultMessageForFileName(file.name)}}">
               </div>
               <div class="form-group">
-                <label>File Size</label>
-                {{file.file.size|filesize}}
-                <label>Upload Progress</label>
-                {{file.progress}}%
+                <div>
+                  <label>File Size</label>
+                  {{file.file.size|filesize}}
+                </div>
+                <div>
+                  <label>Image Size</label>
+                  {{file.width}} X {{file.height}}
+                </div>
+                <div>
+                  <label>Upload Progress</label>
+                  {{file.progress}}%
+                </div>
               </div>
             </div>
           </div>

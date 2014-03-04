@@ -55,7 +55,7 @@ directive('navbarLink', ['$location', function($location) {
   };
 }]).
 
-directive('uploader', ['$parse', function($parse) {
+directive('uploader', ['$parse', '$q', function($parse, $q) {
   return {
     restrict: 'E',
     template: '<input type="file">',
@@ -68,18 +68,36 @@ directive('uploader', ['$parse', function($parse) {
       });
       elem.bind('change', function() {
         $scope.$apply(function() {
-          var files = [];
+          var promises = [];
           for (var i = 0; i < elem[0].files.length; i++) {
             var file = elem[0].files[i];
-            files.push({
-              name: file.name,
-              file: file,
-              content: null,
-              message: null,
-              progress: 0
-            });
+            var deferred = $q.defer();
+            FileAPI.getInfo(file, (function(deferred, file) {
+              return function(err, info) {
+                if (err) {
+                  deferred.reject(err);
+                } else {
+                  deferred.resolve({ file: file, info: info });
+                }
+              };
+            })(deferred, file));
+            promises.push(deferred.promise);
           }
-          $parse(attrs.model).assign($scope, files);
+          $q.all(promises).then(function(results) {
+            var files = [];
+            for (var i = 0; i < results.length; i++) {
+              files.push({
+                name: results[i].file.name,
+                file: results[i].file,
+                width: results[i].info.width,
+                height: results[i].info.height,
+                content: null,
+                message: null,
+                progress: 0
+              });
+            }
+            $parse(attrs.model).assign($scope, files);
+          });
         });
       });
     }
