@@ -19,6 +19,19 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
+run(['$window', function($window) {
+  // add EXIF reader
+  $window.FileAPI.addInfoReader(/^image/, function (file, callback){
+    $window.FileAPI.readAsBinaryString(file, function(event) {
+      if (event.type === 'load') {
+        var binaryString = event.result;
+        var exif = EXIF.readFromBinaryFile(new BinaryFile(binaryString));
+        callback(false, { 'exif': exif || {} });
+      }
+    });
+  });
+}]).
+
 filter('length', function() {
   return function(array) {
     return array instanceof Array ? array.length : 0;
@@ -55,7 +68,8 @@ directive('navbarLink', ['$location', function($location) {
   };
 }]).
 
-directive('uploader', ['$parse', '$q', function($parse, $q) {
+directive('uploader', ['$parse', '$q', '$window',
+  function($parse, $q, $window) {
   return {
     restrict: 'E',
     template: '<input type="file">',
@@ -72,7 +86,7 @@ directive('uploader', ['$parse', '$q', function($parse, $q) {
           for (var i = 0; i < elem[0].files.length; i++) {
             var file = elem[0].files[i];
             var deferred = $q.defer();
-            FileAPI.getInfo(file, (function(deferred, file) {
+            $window.FileAPI.getInfo(file, (function(deferred, file) {
               return function(err, info) {
                 if (err) {
                   deferred.reject(err);
@@ -104,19 +118,13 @@ directive('uploader', ['$parse', '$q', function($parse, $q) {
   };
 }]).
 
-directive('fileObject', ['$parse', function($parse) {
+directive('fileObject', ['$parse', '$window', function($parse, $window) {
   return {
     link: function($scope, elem, attrs, controller) {
-      var reader = new FileReader();
       var file = $parse(attrs.fileObject)($scope);
-      var content = $parse(attrs.fileObject + '.content');
-      reader.onload = function() {
-        var datauri = reader.result;
-        var base64str = datauri.match(/^data:(.*?);base64,(.*)$/)[2];
-        elem.attr('src', datauri);
-        content.assign($scope, base64str);
-      };
-      reader.readAsDataURL(file.file);
+      $window.FileAPI.Image(file.file).rotate('auto').get(function (err, img) {
+        if (!err) elem.replaceWith(img);
+      });
     }
   };
 }]).
