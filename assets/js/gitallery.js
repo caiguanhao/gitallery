@@ -122,9 +122,11 @@ directive('fileObject', ['$parse', '$window', function($parse, $window) {
   return {
     link: function($scope, elem, attrs, controller) {
       var file = $parse(attrs.fileObject)($scope);
-      $window.FileAPI.Image(file.file).rotate('auto').get(function (err, img) {
-        if (!err) elem.replaceWith(img);
-      });
+      $window.FileAPI.Image(file.file).rotate('auto')
+        .resize(300, 300, 'max')
+        .get(function(err, img) {
+          if (!err) elem.replaceWith(img);
+        });
     }
   };
 }]).
