@@ -68,15 +68,18 @@ directive('navbarLink', ['$location', function($location) {
   };
 }]).
 
-directive('uploader', ['$parse', '$q', '$window',
-  function($parse, $q, $window) {
+directive('uploader', ['$q', '$window',
+  function($q, $window) {
   return {
     restrict: 'E',
     template: '<input type="file">',
     replace: true,
+    scope: {
+      files: '='
+    },
     link: function($scope, elem, attrs, controller) {
-      if (!attrs.model) return;
-      $scope.$watchCollection(attrs.model, function(newModel) {
+      if (!attrs.files) return;
+      $scope.$watchCollection(attrs.files, function(newModel) {
         if (newModel === undefined) return;
         if (!newModel || newModel.length === 0) elem.val('');
       });
@@ -110,7 +113,7 @@ directive('uploader', ['$parse', '$q', '$window',
                 progress: 0
               });
             }
-            $parse(attrs.model).assign($scope, files);
+            $scope.files = files;
           });
         });
       });
@@ -118,14 +121,16 @@ directive('uploader', ['$parse', '$q', '$window',
   };
 }]).
 
-directive('fileObject', ['$parse', '$window', function($parse, $window) {
+directive('file', ['$window', function($window) {
   return {
+    scope: {
+      file: '='
+    },
     link: function($scope, elem, attrs, controller) {
-      var file = $parse(attrs.fileObject)($scope);
-      $window.FileAPI.Image(file.file).rotate('auto')
+      $window.FileAPI.Image($scope.file.file).rotate('auto')
         .resize(300, 300, 'max')
-        .get(function(err, img) {
-          if (!err) elem.replaceWith(img);
+        .get(function(err, canvas) {
+          if (!err) elem.replaceWith(canvas);
         });
     }
   };

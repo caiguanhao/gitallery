@@ -61,14 +61,14 @@
             <div class="col-sm-8">
               <div class="form-group">
                 <uploader accept="image/jpeg" multiple="multiple"
-                  model="files"></uploader>
+                  files="files"></uploader>
               </div>
             </div>
           </div>
           <div class="form-group" ng-repeat="file in files">
             <label class="col-sm-4 text-center">
               <div class="preview-image">
-                <img file-object="file">
+                <img file="file">
               </div>
             </label>
             <div class="col-sm-8">
@@ -90,7 +90,7 @@
                   {{file.file.size|filesize}}
                 </div>
                 <div>
-                  <label>Image Size</label>
+                  <label>Original Dimensions</label>
                   {{file.width}} X {{file.height}}
                 </div>
                 <div>
