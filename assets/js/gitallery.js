@@ -19,14 +19,29 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
-run(['$window', function($window) {
+run(['$window', 'CachedImageData', function($window, CachedImageData) {
   // add EXIF reader
   $window.FileAPI.addInfoReader(/^image/, function (file, callback){
-    $window.FileAPI.readAsBinaryString(file, function(event) {
+    $window.FileAPI.readAsDataURL(file, function(event) {
       if (event.type === 'load') {
-        var binaryString = event.result;
-        var exif = EXIF.readFromBinaryFile(new BinaryFile(binaryString));
-        callback(false, { 'exif': exif || {} });
+        var fileObjHash = $window.btoa(JSON.stringify(file));
+        var write = function() {
+          var dataURI = event.result;
+          var base64str = dataURI.match(/^data:(.*?);base64,(.*)$/)[2];
+          var bin = new $window.BinaryFile($window.atob(base64str));
+          var exif = $window.EXIF.readFromBinaryFile(bin);
+          var hashObj = new $window.jsSHA(base64str, 'B64');
+          var sha1 = hashObj.getHash('SHA-1', 'HEX');
+          return {
+            exif: exif || {},
+            content: base64str,
+            sha1: sha1
+          };
+        };
+        var data = CachedImageData.Get(fileObjHash, write);
+        callback(false, data);
+      } else if (event.type === 'error') {
+        callback(true);
       }
     });
   });
@@ -103,15 +118,12 @@ directive('uploader', ['$q', '$window',
           $q.all(promises).then(function(results) {
             var files = [];
             for (var i = 0; i < results.length; i++) {
-              files.push({
+              var file = {
                 name: results[i].file.name,
-                file: results[i].file,
-                width: results[i].info.width,
-                height: results[i].info.height,
-                content: null,
                 message: null,
                 progress: 0
-              });
+              };
+              files.push(angular.extend(file, results[i]));
             }
             $scope.files = files;
           });
@@ -209,6 +221,17 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
       }
       return $q.reject(response);
     });
+  };
+}]).
+
+service('CachedImageData', ['$window', function($window) {
+  var self = this;
+  this.CachedData = {};
+  this.Get = function(imageHash, writeData) {
+    if (!self.CachedData.hasOwnProperty(imageHash)) {
+      self.CachedData[imageHash] = writeData();
+    }
+    return self.CachedData[imageHash];
   };
 }]).
 
