@@ -45,14 +45,19 @@ run(['$window', 'CachedImageData', '$filter',
           var title = file.name;
           title = title.replace(/\.jpg$/i, '');
           return {
-            title: title,
-            message: null,
-            progress: 0,
             exif: exif || {},
-            content: base64str,
-            sha1: sha1,
-            cdate: $filter('date')(cDate || mDate, 'yyyy-MM-dd HH:mm:ss'),
-            mdate: $filter('date')(mDate, 'yyyy-MM-dd HH:mm:ss')
+            original: {
+              content: base64str,
+              sha1: sha1
+            },
+            info: {
+              title: title,
+              message: null,
+              progress: 0,
+              cdate: $filter('date')(cDate || mDate, 'yyyy-MM-dd HH:mm:ss'),
+              mdate: $filter('date')(mDate, 'yyyy-MM-dd HH:mm:ss'),
+              rotation: 'auto'
+            }
           };
         };
         var data = CachedImageData.Get(fileObjHash, write);
@@ -136,7 +141,7 @@ directive('uploader', ['$q', '$window',
                 if (err) {
                   deferred.reject(err);
                 } else {
-                  deferred.resolve({ file: file, info: info });
+                  deferred.resolve(angular.extend({ file: file }, info));
                 }
               };
             })(deferred, file));
@@ -290,6 +295,9 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     filename = filename.replace(/\.{1,}$/, '');
     if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
+  };
+  $scope.manipulate = function(file) {
+    console.log(file)
   };
   $scope.upload = function() {
     var files = $scope.files;
