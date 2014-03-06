@@ -74,29 +74,17 @@
             </label>
             <div class="col-sm-8">
               <div class="form-group">
-                <label>Name</label>
-                <input class="form-control" type="text"
-                  name="filename" ng-model="file.name"
-                  maxlength="80" placeholder="File name">
-              </div>
-              <div class="form-group">
-                <label>Commit Message</label>
-                <input class="form-control" id="message" type="text"
-                  maxlength="80" ng-model="file.message"
-                  placeholder="{{defaultMessageForFileName(file.name)}}">
-              </div>
-              <div class="form-group">
-                <div>
-                  <label>Date Created</label>
-                  {{(file.info.cdate|date:'yyyy-MM-dd HH:mm:ss')||'(unknown)'}}
-                </div>
-                <div>
-                  <label>Date Modified</label>
-                  {{(file.info.mdate|date:'yyyy-MM-dd HH:mm:ss')||'(unknown)'}}
-                </div>
                 <div>
                   <label>SHA1</label>
                   {{file.info.sha1}}
+                </div>
+                <div>
+                  <label>Type</label>
+                  {{file.file.type}}
+                </div>
+                <div>
+                  <label>Location</label>
+                  {{file.info.sha1|makePath:file.file.type}}
                 </div>
                 <div>
                   <label>File Size</label>
@@ -106,9 +94,33 @@
                   <label>Original Dimensions</label>
                   {{file.info.width}} X {{file.info.height}}
                 </div>
+              </div>
+              <div class="form-group">
+                <label>Title</label>
+                <input class="form-control" type="text"
+                  name="filename" ng-model="file.info.title"
+                  maxlength="80" placeholder="Title of this photo">
+              </div>
+              <div class="form-group">
+                <label>Commit Message</label>
+                <input class="form-control" id="message" type="text"
+                  maxlength="80" ng-model="file.info.message"
+                  placeholder="{{defaultMessageForFileName(file.info.title)}}">
+              </div>
+              <div class="form-group">
+                <label>This photo was taken on</label>
+                <input class="form-control" id="message" type="text"
+                  maxlength="80" ng-model="file.info.cdate">
+              </div>
+              <div class="form-group">
+                <label>This photo was modified on</label>
+                <input class="form-control" id="message" type="text"
+                  maxlength="80" ng-model="file.info.mdate">
+              </div>
+              <div class="form-group">
                 <div>
                   <label>Upload Progress</label>
-                  {{file.progress}}%
+                  {{file.info.progress}}%
                 </div>
                 <div>
                   <a href ng-click="file.showExif=!file.showExif">

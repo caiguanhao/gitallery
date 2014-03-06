@@ -19,7 +19,8 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
-run(['$window', 'CachedImageData', function($window, CachedImageData) {
+run(['$window', 'CachedImageData', '$filter',
+  function($window, CachedImageData, $filter) {
   function convertDate(date) {
     if (!date) return null;
     var d = date.split(/:|-|\s/).map(function(s) { return +s; });
@@ -41,12 +42,17 @@ run(['$window', 'CachedImageData', function($window, CachedImageData) {
                       convertDate(exif.DateTimeDigitized) ||
                       convertDate(exif.DateTime);
           var mDate = file.lastModifiedDate;
+          var title = file.name;
+          title = title.replace(/\.jpg$/i, '');
           return {
+            title: title,
+            message: null,
+            progress: 0,
             exif: exif || {},
             content: base64str,
             sha1: sha1,
-            cdate: cDate,
-            mdate: mDate
+            cdate: $filter('date')(cDate || mDate, 'yyyy-MM-dd HH:mm:ss'),
+            mdate: $filter('date')(mDate, 'yyyy-MM-dd HH:mm:ss')
           };
         };
         var data = CachedImageData.Get(fileObjHash, write);
@@ -67,6 +73,16 @@ filter('length', function() {
 filter('filesize', function() {
   return function(size) {
     return filesize(size, { base: 2 });
+  };
+}).
+
+filter('makePath', function() {
+  return function(sha, fileType) {
+    var ext = '';
+    if (fileType === 'image/jpeg') {
+      ext = '.jpg';
+    }
+    return sha.split('', 2).concat(sha+ext).join('/');
   };
 }).
 
@@ -129,12 +145,7 @@ directive('uploader', ['$q', '$window',
           $q.all(promises).then(function(results) {
             var files = [];
             for (var i = 0; i < results.length; i++) {
-              var file = {
-                name: results[i].file.name,
-                message: null,
-                progress: 0
-              };
-              files.push(angular.extend(file, results[i]));
+              files.push(results[i]);
             }
             $scope.files = files;
           });
@@ -275,6 +286,9 @@ service('Accounts', ['LocalStorage', function(LocalStorage) {
 controller('MainController', ['$scope', '$q', 'GitHubAPI',
   function($scope, $q, GitHubAPI) {
   $scope.defaultMessageForFileName = function(filename) {
+    if (typeof filename !== 'string') filename = '';
+    filename = filename.replace(/\.{1,}$/, '');
+    if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
   };
   $scope.upload = function() {
@@ -287,19 +301,19 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     deferred.resolve();
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
-      var message = (file.message ||
-        $scope.defaultMessageForFileName(file.name));
+      var message = (file.info.message ||
+        $scope.defaultMessageForFileName(file.info.title));
       var then = (function(file, message) {
         return function() {
           var deferred = $q.defer();
-          GitHubAPI.UploadFile(file.name, file.content, message)
+          GitHubAPI.UploadFile(file.info.title, file.info.content, message)
             .then(function(response) {
               deferred.resolve(response);
             }, function(response) {
               deferred.reject(response);
             }, function(event) {
               var progress = parseInt(100.0 * event.loaded / event.total);
-              file.progress = Math.min(100, progress);
+              file.info.progress = Math.min(100, progress);
             });
           return deferred.promise;
         };
