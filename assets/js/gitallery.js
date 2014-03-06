@@ -20,6 +20,11 @@ config(['$routeProvider', '$locationProvider',
 }]).
 
 run(['$window', 'CachedImageData', function($window, CachedImageData) {
+  function convertDate(date) {
+    if (!date) return null;
+    var d = date.split(/:|-|\s/).map(function(s) { return +s; });
+    return new Date(d[0], d[1] - 1, d[2], d[3], d[4], d[5]);
+  }
   // add EXIF reader
   $window.FileAPI.addInfoReader(/^image/, function (file, callback){
     $window.FileAPI.readAsDataURL(file, function(event) {
@@ -32,10 +37,16 @@ run(['$window', 'CachedImageData', function($window, CachedImageData) {
           var exif = $window.EXIF.readFromBinaryFile(bin);
           var hashObj = new $window.jsSHA(base64str, 'B64');
           var sha1 = hashObj.getHash('SHA-1', 'HEX');
+          var cDate = convertDate(exif.DateTimeOriginal) ||
+                      convertDate(exif.DateTimeDigitized) ||
+                      convertDate(exif.DateTime);
+          var mDate = file.lastModifiedDate;
           return {
             exif: exif || {},
             content: base64str,
-            sha1: sha1
+            sha1: sha1,
+            cdate: cDate,
+            mdate: mDate
           };
         };
         var data = CachedImageData.Get(fileObjHash, write);
