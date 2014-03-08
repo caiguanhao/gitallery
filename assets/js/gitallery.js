@@ -60,7 +60,8 @@ run(['$window', 'CachedImageData', '$filter',
               progress: 0,
               cdate: $filter('date')(cDate || mDate, 'yyyy-MM-dd HH:mm:ss'),
               mdate: $filter('date')(mDate, 'yyyy-MM-dd HH:mm:ss'),
-              rotation: 'auto'
+              rotation: 'auto',
+              quality: 80
             }
           };
         };
@@ -171,11 +172,17 @@ directive('previewImage', ['$window', function($window) {
       file: '=previewImage'
     },
     link: function($scope, elem, attrs, controller) {
-      $scope.$watch('file.info.rotation', function(after, before) {
-        $scope.file.current.image.rotate(after);
+      var update = function() {
         $scope.file.current.image.get(function(err, canvas) {
           if (err) return;
-          var dataURL = canvas.toDataURL($scope.file.file.type, 0.8);
+          var quality = $scope.file.info.quality;
+          if (typeof quality === 'string') quality = parseInt(quality);
+          if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
+            quality = quality / 100;
+          } else {
+            quality = 0.8;
+          }
+          var dataURL = canvas.toDataURL($scope.file.file.type, quality);
           elem.empty().append('<img src="' + dataURL + '">');
           var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
           var hashObj = new $window.jsSHA(base64str, 'B64');
@@ -185,6 +192,15 @@ directive('previewImage', ['$window', function($window) {
           $scope.file.current.size = size;
           $scope.$apply();
         });
+      };
+      $scope.$watch('file.info.rotation', function(after, before) {
+        $scope.file.current.image.rotate(after);
+        update();
+      });
+      var timeout;
+      $scope.$watch('file.info.quality', function(after, before) {
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(update, 1000);
       });
     }
   };
