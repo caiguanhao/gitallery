@@ -201,7 +201,8 @@ directive('previewImage', ['$window', function($window) {
   };
 }]).
 
-directive('allowCustomOption', ['$window', function($window) {
+directive('allowCustomOption', ['$window', '$filter',
+  function($window, $filter) {
   return {
     scope: {
       model: '=ngModel',
@@ -216,13 +217,8 @@ directive('allowCustomOption', ['$window', function($window) {
             $scope.model = +attrs.allowCustomOptionDefault;
           } else {
             var opts = $scope.defaultQualityOptions, exist = false;
-            for (var i = 0; i < opts.length; i++) {
-              if (opts[i].value === +custom) {
-                exist = true;
-                break;
-              }
-            }
-            if (!exist) {
+            var c = $filter('filter')(opts, { value: +custom }, true);
+            if (c.length === 0) {
               $scope.defaultQualityOptions.splice(opts.length - 1, 0, {
                 value: +custom,
                 label: 'Custom (' + custom + ')'
