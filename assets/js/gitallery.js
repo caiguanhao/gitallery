@@ -176,7 +176,6 @@ directive('previewImage', ['$window', function($window) {
         $scope.file.current.image.get(function(err, canvas) {
           if (err) return;
           var quality = $scope.file.info.quality;
-          if (typeof quality === 'string') quality = parseInt(quality);
           if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
             quality = quality / 100;
           } else {
@@ -197,13 +196,45 @@ directive('previewImage', ['$window', function($window) {
         $scope.file.current.image.rotate(after);
         update();
       });
-      var timeout;
-      $scope.$watch('file.info.quality', function(after, before) {
-        if (timeout) clearTimeout(timeout);
-        timeout = setTimeout(update, 1000);
-      });
+      $scope.$watch('file.info.quality', update);
     }
   };
+}]).
+
+directive('allowCustomOption', ['$window', function($window) {
+  return {
+    scope: {
+      model: '=ngModel',
+      defaultQualityOptions: '=allowCustomOptionOptions'
+    },
+    link: function($scope, elem, attrs) {
+      elem.on('change', function() {
+        if ($scope.model === +attrs.allowCustomOptionIdentity) {
+          var custom = $window.prompt(attrs.allowCustomOption);
+          if (!custom || (attrs.allowCustomOptionRegEx &&
+            !(new RegExp(attrs.allowCustomOptionRegEx)).test(custom))) {
+            $scope.model = +attrs.allowCustomOptionDefault;
+          } else {
+            var opts = $scope.defaultQualityOptions, exist = false;
+            for (var i = 0; i < opts.length; i++) {
+              if (opts[i].value === +custom) {
+                exist = true;
+                break;
+              }
+            }
+            if (!exist) {
+              $scope.defaultQualityOptions.splice(opts.length - 1, 0, {
+                value: +custom,
+                label: 'Custom (' + custom + ')'
+              });
+            }
+            $scope.model = +custom;
+          }
+          $scope.$apply();
+        }
+      });
+    }
+  }
 }]).
 
 service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
@@ -327,6 +358,28 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
   };
+  $scope.defaultQualityOptions = [
+    {
+      value: 20,
+      label: "Bad (20)"
+    },
+    {
+      value: 50,
+      label: "Half (50)"
+    },
+    {
+      value: 80,
+      label: "Normal (80)"
+    },
+    {
+      value: 100,
+      label: "Best (100)"
+    },
+    {
+      value: -1,
+      label: "Custom..."
+    }
+  ];
   $scope.upload = function() {
     var files = $scope.files;
     if (!files || files.length === 0) {
