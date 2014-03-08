@@ -68,9 +68,7 @@
           </div>
           <div class="form-group" ng-repeat="file in files">
             <label class="col-sm-4 text-center">
-              <div class="preview-image">
-                <img file="file">
-              </div>
+              <div class="preview-image" preview-image="file"></div>
             </label>
             <div class="col-sm-8">
               <div class="form-group">
@@ -84,21 +82,28 @@
                 </div>
                 <div>
                   <label>Original Dimensions</label>
-                  {{file.original.width}} X {{file.original.height}}
+                  {{file.width}} X {{file.height}}
                 </div>
                 <div>
                   <label>Type</label>
                   {{file.file.type}}
                 </div>
                 <div>
+                  <label>SHA1</label>
+                  {{file.current.sha1}}
+                </div>
+                <div>
+                  <label>File Size</label>
+                  {{file.current.size|filesize}}
+                </div>
+                <div>
                   <label>Location</label>
-                  {{file.original.sha1|makePath:file.file.type}}
+                  {{file.current.sha1|makePath:file.file.type}}
                 </div>
               </div>
               <div class="form-group">
                 <label>Rotation</label>
-                <select class="form-control" ng-model="file.info.rotation"
-                  ng-change="manipulate(file)">
+                <select class="form-control" ng-model="file.info.rotation">
                   <option value="0">0</option>
                   <option value="auto">Auto</option>
                   <option value="90">90</option>

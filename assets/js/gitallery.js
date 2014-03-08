@@ -47,8 +47,12 @@ run(['$window', 'CachedImageData', '$filter',
           return {
             exif: exif || {},
             original: {
-              content: base64str,
               sha1: sha1
+            },
+            current: {
+              image: $window.FileAPI.Image(file),
+              size: 0,
+              sha1: null
             },
             info: {
               title: title,
@@ -83,6 +87,7 @@ filter('filesize', function() {
 
 filter('makePath', function() {
   return function(sha, fileType) {
+    if (!sha) return '';
     var ext = '';
     if (fileType === 'image/jpeg') {
       ext = '.jpg';
@@ -160,17 +165,27 @@ directive('uploader', ['$q', '$window',
   };
 }]).
 
-directive('file', ['$window', function($window) {
+directive('previewImage', ['$window', function($window) {
   return {
     scope: {
-      file: '='
+      file: '=previewImage'
     },
     link: function($scope, elem, attrs, controller) {
-      $window.FileAPI.Image($scope.file.file).rotate('auto')
-        .resize(300, 300, 'max')
-        .get(function(err, canvas) {
-          if (!err) elem.replaceWith(canvas);
+      $scope.$watch('file.info.rotation', function(after, before) {
+        $scope.file.current.image.rotate(after);
+        $scope.file.current.image.get(function(err, canvas) {
+          if (err) return;
+          var dataURL = canvas.toDataURL($scope.file.file.type, 0.8);
+          elem.empty().append('<img src="' + dataURL + '">');
+          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
+          var hashObj = new $window.jsSHA(base64str, 'B64');
+          var sha1 = hashObj.getHash('SHA-1', 'HEX');
+          var size = Math.floor((base64str.length - 814) / 1.37);
+          $scope.file.current.sha1 = sha1;
+          $scope.file.current.size = size;
+          $scope.$apply();
         });
+      });
     }
   };
 }]).
@@ -295,9 +310,6 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     filename = filename.replace(/\.{1,}$/, '');
     if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
-  };
-  $scope.manipulate = function(file) {
-    console.log(file)
   };
   $scope.upload = function() {
     var files = $scope.files;
