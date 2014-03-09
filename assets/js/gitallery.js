@@ -86,17 +86,6 @@ filter('filesize', function() {
   };
 }).
 
-filter('makePath', function() {
-  return function(sha, fileType) {
-    if (!sha) return '';
-    var ext = '';
-    if (fileType === 'image/jpeg') {
-      ext = '.jpg';
-    }
-    return sha.split('', 2).concat(sha+ext).join('/');
-  };
-}).
-
 directive('body', [function() {
   return {
     restrict: 'E',
@@ -354,6 +343,14 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
   };
+  $scope.makePath = function(sha, fileType) {
+    if (!sha) return '';
+    var ext = '';
+    if (fileType === 'image/jpeg') {
+      ext = '.jpg';
+    }
+    return sha.split('', 2).concat(sha+ext).join('/');
+  };
   $scope.defaultQualityOptions = [
     {
       value: 20,
@@ -386,12 +383,36 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     deferred.resolve();
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
-      var message = (file.info.message ||
-        $scope.defaultMessageForFileName(file.info.title));
-      var then = (function(file, message) {
+
+      promise = promise.then((function(file) {
         return function() {
           var deferred = $q.defer();
-          GitHubAPI.UploadFile(file.info.title, file.info.content, message)
+          file.current.image.get(function(err, canvas) {
+            if (err) {
+              deferred.reject(err);
+            } else {
+              var quality = file.info.quality;
+              if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
+                quality = quality / 100;
+              } else {
+                quality = 0.8;
+              }
+              var dataURL = canvas.toDataURL(file.file.type, quality);
+              var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
+              deferred.resolve(base64str);
+            }
+          });
+          return deferred.promise;
+        };
+      })(file));
+
+      var then = (function(file) {
+        return function(base64str) {
+          var fileName = $scope.makePath(file.current.sha1, file.file.type);
+          var message = (file.info.message ||
+            $scope.defaultMessageForFileName(file.info.title));
+          var deferred = $q.defer();
+          GitHubAPI.UploadFile(fileName, base64str, message)
             .then(function(response) {
               deferred.resolve(response);
             }, function(response) {
@@ -402,7 +423,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
             });
           return deferred.promise;
         };
-      })(file, message);
+      })(file);
       promise = promise.then(then);
     }
     promise = promise.then(function() {
