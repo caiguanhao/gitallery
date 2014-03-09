@@ -98,7 +98,10 @@
                 </div>
                 <div>
                   <label>Location</label>
-                  {{makePath(file.current.sha1, file.file.type)}}
+                  {{file.current.path}}
+                </div>
+                <div class="alert alert-warning" ng-if="file.current.exists">
+                  Warning: File exists on repository.
                 </div>
               </div>
               <div class="form-group">
@@ -168,10 +171,10 @@
             <div class="col-sm-offset-4 col-sm-8">
               <div class="form-group btn-group">
                 <button type="submit" class="btn btn-default"
-                  ng-disabled="!files || files.length === 0">Upload!</button>
+                  ng-disabled="!controlsEnabled()">Upload!</button>
                 <button type="button" class="btn btn-default"
                   ng-click="files = null"
-                  ng-disabled="!files || files.length === 0">Reset</button>
+                  ng-disabled="!controlsEnabled()">Reset</button>
               </div>
             </div>
           </div>

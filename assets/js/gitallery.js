@@ -52,7 +52,9 @@ run(['$window', 'CachedImageData', '$filter',
             current: {
               image: $window.FileAPI.Image(file),
               size: 0,
-              sha1: null
+              sha1: null,
+              path: null,
+              exists: false
             },
             info: {
               title: title,
@@ -155,12 +157,21 @@ directive('uploader', ['$q', '$window',
   };
 }]).
 
-directive('previewImage', ['$window', function($window) {
+directive('previewImage', ['$window', 'GitHubAPI',
+  function($window, GitHubAPI) {
   return {
     scope: {
       file: '=previewImage'
     },
     link: function($scope, elem, attrs, controller) {
+      var makePath = function(sha, fileType) {
+        if (!sha) return '';
+        var ext = '';
+        if (fileType === 'image/jpeg') {
+          ext = '.jpg';
+        }
+        return sha.split('', 2).concat(sha+ext).join('/');
+      };
       var update = function() {
         $scope.file.current.image.get(function(err, canvas) {
           if (err) return;
@@ -176,9 +187,16 @@ directive('previewImage', ['$window', function($window) {
           var hashObj = new $window.jsSHA(base64str, 'B64');
           var sha1 = hashObj.getHash('SHA-1', 'HEX');
           var size = Math.floor((base64str.length - 814) / 1.37);
+          var path = makePath(sha1, $scope.file.file.type);
           $scope.file.current.sha1 = sha1;
+          $scope.file.current.path = path;
           $scope.file.current.size = size;
           $scope.$apply();
+          GitHubAPI.GetContents(path).then(function() {
+            $scope.file.current.exists = true;
+          }, function() {
+            $scope.file.current.exists = false;
+          });
         });
       };
       $scope.$watch('file.info.rotation', function(after, before) {
@@ -284,11 +302,15 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
       data: JSON.stringify(data)
     });
   };
-  this.UploadFile = function(fileName, fileContent, message) {
+  this.UploadFile = function(fileName, fileContent, message, overwrite) {
     var self = this;
     return this.GetContents(fileName).then(function(response) {
-      var fileSha = response.data.sha;
-      return self.UpdateFile(fileName, fileContent, message, fileSha);
+      if (overwrite) {
+        var fileSha = response.data.sha;
+        return self.UpdateFile(fileName, fileContent, message, fileSha);
+      } else {
+        return $q.reject('Same file already exists on repository. Aborted.');
+      }
     }, function(response) {
       if (response.status === 404) {
         return self.UpdateFile(fileName, fileContent, message, null);
@@ -337,19 +359,16 @@ service('Accounts', ['LocalStorage', function(LocalStorage) {
 
 controller('MainController', ['$scope', '$q', 'GitHubAPI',
   function($scope, $q, GitHubAPI) {
+  $scope.controlsEnabledOverride = true;
+  $scope.controlsEnabled = function() {
+    if (!$scope.controlsEnabledOverride) return false;
+    return $scope.files && $scope.files.length > 0;
+  };
   $scope.defaultMessageForFileName = function(filename) {
     if (typeof filename !== 'string') filename = '';
     filename = filename.replace(/\.{1,}$/, '');
     if (!filename) filename = 'an image';
     return 'Upload ' + filename + '.';
-  };
-  $scope.makePath = function(sha, fileType) {
-    if (!sha) return '';
-    var ext = '';
-    if (fileType === 'image/jpeg') {
-      ext = '.jpg';
-    }
-    return sha.split('', 2).concat(sha+ext).join('/');
   };
   $scope.defaultQualityOptions = [
     {
@@ -374,6 +393,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     }
   ];
   $scope.upload = function() {
+    $scope.controlsEnabledOverride = false;
     var files = $scope.files;
     if (!files || files.length === 0) {
       return alert('No files to upload!');
@@ -392,7 +412,8 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
               deferred.reject(err);
             } else {
               var quality = file.info.quality;
-              if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
+              if (typeof quality === 'number' &&
+                quality >= 0 && quality <= 100) {
                 quality = quality / 100;
               } else {
                 quality = 0.8;
@@ -408,11 +429,11 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
 
       var then = (function(file) {
         return function(base64str) {
-          var fileName = $scope.makePath(file.current.sha1, file.file.type);
+          var fileName = file.current.path;
           var message = (file.info.message ||
             $scope.defaultMessageForFileName(file.info.title));
           var deferred = $q.defer();
-          GitHubAPI.UploadFile(fileName, base64str, message)
+          GitHubAPI.UploadFile(fileName, base64str, message, false)
             .then(function(response) {
               deferred.resolve(response);
             }, function(response) {
@@ -427,12 +448,18 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
       promise = promise.then(then);
     }
     promise = promise.then(function() {
-      console.log('come to an end', arguments);
-    }, function() {
-      console.log('come to an error', arguments);
+      alert('All files have been uploaded.');
+      $scope.files = null;
+    }, function(response) {
+      if (typeof response === 'string') {
+        alert(response);
+      } else {
+        alert('Server returned a ' + response.status + ' status code.');
+        console.log(response);
+      }
     });
     promise['finally'](function() {
-      $scope.files = null;
+      $scope.controlsEnabledOverride = true;
     });
   };
 }]).
