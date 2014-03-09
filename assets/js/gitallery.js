@@ -112,8 +112,8 @@ directive('navbarLink', ['$location', function($location) {
   };
 }]).
 
-directive('uploader', ['$q', '$window',
-  function($q, $window) {
+directive('uploader', ['$q', '$window', 'CachedImageData',
+  function($q, $window, CachedImageData) {
   return {
     restrict: 'E',
     template: '<input type="file">',
@@ -122,6 +122,7 @@ directive('uploader', ['$q', '$window',
       files: '='
     },
     link: function($scope, elem, attrs, controller) {
+      CachedImageData.Clear();
       if (!attrs.files) return;
       $scope.$watchCollection(attrs.files, function(newModel) {
         if (newModel === undefined) return;
@@ -328,6 +329,9 @@ service('CachedImageData', ['$window', function($window) {
       self.CachedData[imageHash] = writeData();
     }
     return self.CachedData[imageHash];
+  };
+  this.Clear = function() {
+    self.CachedData = {};
   };
 }]).
 
