@@ -94,7 +94,7 @@
                 </div>
                 <div>
                   <label>File Size</label>
-                  {{file.current.size|filesize}}
+                  ≈ {{file.current.size|filesize}}
                 </div>
                 <div>
                   <label>Location</label>
@@ -152,7 +152,16 @@
               <div class="form-group">
                 <div>
                   <label>Upload Progress</label>
-                  {{file.info.progress}}%
+                  <div class="progress progress-striped active">
+                    <div class="progress-bar" role="progressbar"
+                      aria-valuenow="{{file.info.progress}}" aria-valuemin="0"
+                      aria-valuemax="100"
+                      style="width: {{file.info.progress}}%">
+                      <span class="sr-only">
+                        {{file.info.progress}}% Complete
+                      </span>
+                    </div>
+                  </div>
                 </div>
                 <div>
                   <a href ng-click="file.showExif=!file.showExif">
