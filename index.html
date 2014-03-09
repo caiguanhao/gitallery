@@ -100,8 +100,19 @@
                   <label>Location</label>
                   {{file.current.path}}
                 </div>
-                <div class="alert alert-warning" ng-if="file.current.exists">
-                  Warning: File exists on repository.
+                <div class="smaller-alerts" ng-switch on="file.current.exists">
+                  <div class="alert alert-info" ng-switch-when="loading">
+                    Checking if file exists on repository...
+                  </div>
+                  <div class="alert alert-success" ng-switch-when="false">
+                    You can upload this new file to your repository.
+                  </div>
+                  <div class="alert alert-warning" ng-switch-default>
+                    Warning: File
+                    <a href="{{file.current.exists}}"
+                      target="_blank">exists</a>
+                    on repository.
+                  </div>
                 </div>
               </div>
               <div class="form-group">

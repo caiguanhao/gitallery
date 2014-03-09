@@ -54,7 +54,7 @@ run(['$window', 'CachedImageData', '$filter',
               size: 0,
               sha1: null,
               path: null,
-              exists: false
+              exists: 'loading'
             },
             info: {
               title: title,
@@ -193,8 +193,9 @@ directive('previewImage', ['$window', 'GitHubAPI',
           $scope.file.current.path = path;
           $scope.file.current.size = size;
           $scope.$apply();
-          GitHubAPI.GetContents(path).then(function() {
-            $scope.file.current.exists = true;
+          $scope.file.current.exists = 'loading';
+          GitHubAPI.IfFileExists(path).then(function(files) {
+            $scope.file.current.exists = files[0].html_url;
           }, function() {
             $scope.file.current.exists = false;
           });
@@ -241,13 +242,20 @@ directive('allowCustomOption', ['$window', '$filter',
   }
 }]).
 
-service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
-  function($http, $q, $upload, Accounts) {
+service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
+  function($http, $q, $upload, Accounts, $filter) {
 
   this.API = 'https://api.github.com';
+  this.Names = function(fileName) {
+    var arr = fileName.replace(/^[\/]+|[\/]+$/g, '').split(/[\/]+/);
+    return {
+      BaseName: arr.slice(-1)[0],
+      DirName: arr.slice(0, -1).join('/')
+    };
+  }
   this.FullName = function() {
     return Accounts.GetCurrentAccount().FullName;
-  }
+  };
   this.Headers = function() {
     return {
       "Authorization": "token " + Accounts.GetCurrentAccount().Token
@@ -318,6 +326,23 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts',
       }
       return $q.reject(response);
     });
+  };
+  this.IfFileExists = function(fileName) {
+    var names = this.Names(fileName);
+    var deferred = $q.defer();
+    this.Get('repos', this.FullName(), 'contents', names.DirName).
+      then(function(response) {
+        var files = response.data;
+        var matched = $filter('filter')(files, { name: names.BaseName }, true);
+        if (matched.length === 0) {
+          deferred.reject();
+        } else {
+          deferred.resolve(matched);
+        }
+      }, function(response) {
+        deferred.reject();
+      });
+    return deferred.promise;
   };
 }]).
 
