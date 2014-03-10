@@ -17,6 +17,7 @@
   <script src="/js/vendor/filesize.js"></script>
   <script src="/js/vendor/exif.js"></script>
   <script src="/js/vendor/sha1.js"></script>
+  <script src="/js/vendor/aes.min.js"></script>
   <script src="/js/gitallery.js"></script>
   <script src="http://{%LOCAL-IP%}:35729/livereload.js"></script>
   <!--<![endif]-->
@@ -205,6 +206,23 @@
   <script type="text/ng-template" id="accounts">
     <div class="row">
       <div class="col-sm-6">
+        <h2>Local Password</h2>
+        <div class="smaller-alerts">
+          <div class="alert alert-warning" ng-if="!User.Password">
+            You haven't entered local password yet.
+          </div>
+        </div>
+        <form class="form" role="form" ng-submit="reload()">
+          <div class="form-group">
+            <input type="password" class="form-control"
+              ng-model="Password" placeholder="Local password">
+          </div>
+          <div class="form-group">
+            <input type="submit" class="btn btn-default"
+              value="Use this password"
+              ng-disabled="!Password">
+          </div>
+        </form>
         <h2>Select account to use:</h2>
         <div class="list-group">
           <div class="list-group-item"

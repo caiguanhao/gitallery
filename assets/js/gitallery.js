@@ -360,7 +360,23 @@ service('CachedImageData', ['$window', function($window) {
   };
 }]).
 
-service('LocalStorage', ['$window', function($window) {
+service('User', ['$window', function($window) {
+  this.Password = null;
+  this.SetPassword = function(before) {
+    var hashObj = new $window.jsSHA(before, 'TEXT');
+    var after = hashObj.getHash('SHA-1', 'HEX');
+    this.Password = after;
+  };
+  this.Encrypt = function(string) {
+    return $window.CryptoJS.AES.encrypt(string, this.Password).toString();
+  };
+  this.Decrypt = function(string) {
+    return $window.CryptoJS.AES.decrypt(string, this.Password).
+      toString(CryptoJS.enc.Utf8);
+  };
+}]).
+
+service('LocalStorage', ['$window', 'User', function($window, User) {
   return function(category, setValue) {
     try {
       var name = 'gitallery.' + category;
@@ -368,10 +384,12 @@ service('LocalStorage', ['$window', function($window) {
         if (setValue === null) {
           delete $window.localStorage[name];
         } else {
-          $window.localStorage[name] = angular.toJson(setValue);
+          var data = angular.toJson(setValue);
+          $window.localStorage[name] = User.Encrypt(data);
         }
       }
-      return angular.fromJson($window.localStorage[name]);
+      var data = $window.localStorage[name];
+      return angular.fromJson(User.Decrypt(data));
     } catch(e) {}
     return null;
   };
@@ -493,9 +511,16 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
   };
 }]).
 
-controller('AccountsController', ['$scope', '$window', '$filter',
-  'LocalStorage', 'GitHubAPI',
-  function($scope, $window, $filter, LocalStorage, GitHubAPI) {
+controller('AccountsController', ['$scope', '$window', '$filter', 'User',
+  'LocalStorage', 'GitHubAPI', '$route',
+  function($scope, $window, $filter, User, LocalStorage, GitHubAPI, $route) {
+
+  $scope.User = User;
+  $scope.reload = function() {
+    User.SetPassword($scope.Password);
+    $scope.Password = null;
+    $route.reload();
+  };
 
   $scope.repositoriesReadFromCache = true;
   $scope.updateRepositories = function() {
