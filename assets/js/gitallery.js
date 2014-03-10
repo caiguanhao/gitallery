@@ -366,6 +366,7 @@ service('User', ['$window', function($window) {
     var hashObj = new $window.jsSHA(before, 'TEXT');
     var after = hashObj.getHash('SHA-1', 'HEX');
     this.Password = after;
+    this.RemoveAll();
   };
   this.Encrypt = function(string) {
     return $window.CryptoJS.AES.encrypt(string, this.Password).toString();
@@ -373,6 +374,19 @@ service('User', ['$window', function($window) {
   this.Decrypt = function(string) {
     return $window.CryptoJS.AES.decrypt(string, this.Password).
       toString(CryptoJS.enc.Utf8);
+  };
+  this.CachedData = {};
+  this.Get = function(key, write) {
+    if (!this.CachedData.hasOwnProperty(key)) {
+      this.CachedData[key] = write();
+    }
+    return this.CachedData[key];
+  };
+  this.Remove = function(key) {
+    delete this.CachedData[key];
+  };
+  this.RemoveAll = function(key) {
+    this.CachedData = {};
   };
 }]).
 
@@ -386,10 +400,14 @@ service('LocalStorage', ['$window', 'User', function($window, User) {
         } else {
           var data = angular.toJson(setValue);
           $window.localStorage[name] = User.Encrypt(data);
+          User.Remove(name);
         }
       }
-      var data = $window.localStorage[name];
-      return angular.fromJson(User.Decrypt(data));
+      var write = function() {
+        var data = $window.localStorage[name];
+        return angular.fromJson(User.Decrypt(data));
+      };
+      return User.Get(name, write);
     } catch(e) {}
     return null;
   };
