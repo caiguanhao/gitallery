@@ -550,7 +550,17 @@ controller('AccountsController', ['$scope', '$window', '$filter', 'User',
       for (var i = 0; i < response.length; i++) {
         repositories = repositories.concat(response[i].data);
       }
-      $scope.repositories = repositories;
+      var repos = [];
+      for (var i = 0; i < repositories.length; i++) {
+        var r = repositories[i];
+        repos.push({
+          id: r.id,
+          name: r.name,
+          full_name: r.full_name,
+          permissions: r.permissions
+        });
+      }
+      $scope.repositories = repos;
     }, function(response) {
       if (response.status === 401) {
         $scope.repoLoadStatus = 'unauthorized';
@@ -582,7 +592,9 @@ controller('AccountsController', ['$scope', '$window', '$filter', 'User',
   };
   update();
 
-  $scope.predicate = '';
+  $scope.predicate = 'id';
+  $scope.reverse = true;
+
   $scope.add = function() {
     var token = $scope.token;
     if (!/^[a-f0-9]{1,40}$/.test(token)) return alert('Not a valid token.');
