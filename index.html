@@ -20,6 +20,11 @@
   <script src="/js/vendor/aes.min.js"></script>
   <script src="/js/gitallery.js"></script>
   <script src="http://{%LOCAL-IP%}:35729/livereload.js"></script>
+  <script>
+    gitallery.run(['User', function(User) {
+      User.SetPassword('{%LOCAL-PASSWORD%}');
+    }]);
+  </script>
   <!--<![endif]-->
   <script type="text/ng-template" id="index">
     <div id="wrap">

@@ -12,7 +12,7 @@ module.exports = function(grunt) {
       server: {
         options: {
           hostname: '*',
-          port: 3000,
+          port: process.env.PORT || 3000,
           base: [ 'assets', 'public' ]
         }
       }
@@ -68,6 +68,9 @@ module.exports = function(grunt) {
   grunt.registerTask('copy-index', 'Copy index page', function() {
     var index = grunt.file.read('index.html');
     index = index.replace('{%LOCAL-IP%}', local_ip);
+    var local_password = process.env.LOCALPWD;
+    index = index.replace('{%LOCAL-PASSWORD%}', local_password);
+    if (!local_password) grunt.log.errorlns('Local password is empty.');
     grunt.file.write('public/index.html', index);
     grunt.log.ok('Copied index.html to public/index.html.');
   });
