@@ -400,8 +400,8 @@ service('LocalStorage', ['$window', 'User', function($window, User) {
         } else {
           var data = angular.toJson(setValue);
           $window.localStorage[name] = User.Encrypt(data);
-          User.Remove(name);
         }
+        User.Remove(name);
       }
       var write = function() {
         var data = $window.localStorage[name];
