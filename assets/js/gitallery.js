@@ -32,8 +32,8 @@ run(['$window', 'CachedImageData', '$filter',
       if (event.type === 'load') {
         var fileObjHash = $window.btoa(JSON.stringify(file));
         var write = function() {
-          var dataURI = event.result;
-          var base64str = dataURI.match(/^data:(.*?);base64,(.*)$/)[2];
+          var dataURL = event.result;
+          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
           var bin = new $window.BinaryFile($window.atob(base64str));
           var exif = $window.EXIF.readFromBinaryFile(bin);
           var hashObj = new $window.jsSHA(base64str, 'B64');
@@ -158,8 +158,8 @@ directive('uploader', ['$q', '$window', 'CachedImageData',
   };
 }]).
 
-directive('previewImage', ['$window', 'GitHubAPI',
-  function($window, GitHubAPI) {
+directive('previewImage', ['$window', 'GitHubAPI', 'Gitallery',
+  function($window, GitHubAPI, Gitallery) {
   return {
     scope: {
       file: '=previewImage'
@@ -194,7 +194,8 @@ directive('previewImage', ['$window', 'GitHubAPI',
           $scope.file.current.size = size;
           $scope.$apply();
           $scope.file.current.exists = 'loading';
-          GitHubAPI.IfFileExists(path).then(function(files) {
+          var photo = Gitallery.PhotosPath(path);
+          GitHubAPI.IfFileExists(photo).then(function(files) {
             $scope.file.current.exists = files[0].html_url;
           }, function() {
             $scope.file.current.exists = false;
@@ -240,6 +241,12 @@ directive('allowCustomOption', ['$window', '$filter',
       });
     }
   }
+}]).
+
+service('Gitallery', [function() {
+  this.PhotosPath = function(path) {
+    return 'photos' + '/' + path;
+  };
 }]).
 
 service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
@@ -422,8 +429,8 @@ service('Accounts', ['LocalStorage', function(LocalStorage) {
   };
 }]).
 
-controller('MainController', ['$scope', '$q', 'GitHubAPI',
-  function($scope, $q, GitHubAPI) {
+controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
+  function($scope, $q, GitHubAPI, Gitallery) {
   $scope.controlsEnabledOverride = true;
   $scope.controlsEnabled = function() {
     if (!$scope.controlsEnabledOverride) return false;
@@ -507,7 +514,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
 
       var then = (function(file) {
         return function(dataURL) {
-          var fileName = 'photos' + '/' + file.current.path;
+          var fileName = Gitallery.PhotosPath(file.current.path);
           var message = (file.info.message ||
             $scope.defaultMessageForFile(file));
           var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
