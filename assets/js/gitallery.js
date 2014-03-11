@@ -195,8 +195,8 @@ directive('previewImage', ['$window', 'GitHubAPI', 'Gitallery',
           $scope.$apply();
           $scope.file.current.exists = 'loading';
           var photo = Gitallery.PhotosPath(path);
-          GitHubAPI.IfFileExists(photo).then(function(files) {
-            $scope.file.current.exists = files[0].html_url;
+          GitHubAPI.GetFile(photo).then(function(file) {
+            $scope.file.current.exists = file.html_url;
           }, function() {
             $scope.file.current.exists = false;
           });
@@ -301,8 +301,25 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
   this.GetOrganizationRepositories = function(orgname) {
     return this.Get('orgs', orgname, 'repos');
   };
+  // get contents of file or get directory listing
   this.GetContents = function(fileName) {
     return this.Get('repos', this.FullName(), 'contents', fileName);
+  };
+  this.GetFile = function(fileName) {
+    var names = this.Names(fileName);
+    var deferred = $q.defer();
+    this.GetContents(names.DirName).then(function(response) {
+      var files = response.data || [];
+      var file = $filter('filter')(files, { name: names.BaseName }, true);
+      if (file.length === 1) {
+        deferred.resolve(file[0]);
+      } else {
+        deferred.reject();
+      }
+    }, function() {
+      deferred.reject();
+    });
+    return deferred.promise;
   };
   this.UpdateFile = function(fileName, fileContent, message, fileSha) {
     var url = this.BuildURL('repos', this.FullName(), 'contents', fileName);
@@ -320,10 +337,9 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
   };
   this.UploadFile = function(fileName, fileContent, message, overwrite) {
     var self = this;
-    return this.GetContents(fileName).then(function(response) {
+    return this.GetFile(fileName).then(function(file) {
       if (overwrite) {
-        var fileSha = response.data.sha;
-        return self.UpdateFile(fileName, fileContent, message, fileSha);
+        return self.UpdateFile(fileName, fileContent, message, file.sha);
       } else {
         return $q.reject('Same file already exists on repository. Aborted.');
       }
@@ -333,23 +349,6 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
       }
       return $q.reject(response);
     });
-  };
-  this.IfFileExists = function(fileName) {
-    var names = this.Names(fileName);
-    var deferred = $q.defer();
-    this.Get('repos', this.FullName(), 'contents', names.DirName).
-      then(function(response) {
-        var files = response.data;
-        var matched = $filter('filter')(files, { name: names.BaseName }, true);
-        if (matched.length === 0) {
-          deferred.reject();
-        } else {
-          deferred.resolve(matched);
-        }
-      }, function(response) {
-        deferred.reject();
-      });
-    return deferred.promise;
   };
 }]).
 
