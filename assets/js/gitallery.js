@@ -171,7 +171,7 @@ directive('previewImage', ['$window', 'GitHubAPI',
         if (fileType === 'image/jpeg') {
           ext = '.jpg';
         }
-        return sha.split('', 2).concat(sha+ext).join('/');
+        return sha.slice(0, 2) + '/' + sha.slice(2) + ext;
       };
       var update = function() {
         $scope.file.current.image.get(function(err, canvas) {
@@ -477,7 +477,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     for (var i = 0; i < files.length; i++) {
       var file = files[i];
 
-      promise = promise.then((function(file) {
+      var then = (function(file) {
         return function() {
           var deferred = $q.defer();
           file.current.image.get(function(err, canvas) {
@@ -492,29 +492,50 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
                 quality = 0.8;
               }
               var dataURL = canvas.toDataURL(file.file.type, quality);
-              var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
-              deferred.resolve(base64str);
+              deferred.resolve(dataURL);
             }
           });
           return deferred.promise;
         };
-      })(file));
+      })(file)
+      promise = promise.then(then);
 
       var then = (function(file) {
-        return function(base64str) {
-          var fileName = file.current.path;
+        return function(dataURL) {
+          var fileName = 'photos' + '/' + file.current.path;
           var message = (file.info.message ||
             $scope.defaultMessageForFileName(file.info.title));
+          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
           var deferred = $q.defer();
           GitHubAPI.UploadFile(fileName, base64str, message, false)
             .then(function(response) {
-              deferred.resolve(response);
+              deferred.resolve({
+                dataURL: dataURL,
+                response: response
+              });
             }, function(response) {
               deferred.reject(response);
             }, function(event) {
               var progress = parseInt(100.0 * event.loaded / event.total);
               file.info.progress = Math.min(100, progress);
             });
+          return deferred.promise;
+        };
+      })(file);
+      promise = promise.then(then);
+
+      var then = (function(file) {
+        return function(bundle) {
+          var content = bundle.response.data.content;
+          $scope.completed = $scope.completed || [];
+          $scope.completed.push({
+            name: content.name,
+            size: content.size,
+            url: content.html_url,
+            image: bundle.dataURL
+          });
+          var deferred = $q.defer();
+          deferred.resolve();
           return deferred.promise;
         };
       })(file);

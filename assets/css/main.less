@@ -49,6 +49,39 @@ footer {
   }
 }
 
+.completed {
+  border-bottom: 1px solid #CCC;
+  padding-top: 10px;
+  padding-bottom: 20px;
+  margin-bottom: 10px;
+  h3 {
+    margin-top: 0;
+  }
+}
+
+.fileitem {
+  color: #7A7A7A;
+  text-decoration: none;
+  &:hover {
+    color: #000;
+    text-decoration: none;
+  }
+}
+
+.fileinfo {
+  padding: 5px 5px 0;
+  p {
+    margin: 0;
+  }
+  p.filename {
+    text-overflow: ellipsis;
+    overflow: hidden;
+    white-space: nowrap;
+    font-weight: bold;
+  }
+}
+
+
 // force not to collapse nav
 .navbar-nav {
   float: left;
