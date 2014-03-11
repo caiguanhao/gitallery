@@ -316,8 +316,8 @@ service('GitHubAPI', ['$http', '$q', '$upload', 'Accounts', '$filter',
       } else {
         deferred.reject();
       }
-    }, function() {
-      deferred.reject();
+    }, function(response) {
+      deferred.reject(response);
     });
     return deferred.promise;
   };
