@@ -165,8 +165,7 @@
                 </select>
               </div>
               <div class="form-group">
-                <label>Quality{{file.info.quality > -1 &&
-                  ' (' + file.info.quality + ')' || '' }}:</label>
+                <label>Quality</label>
                 <select class="form-control" ng-model="file.info.quality"
                   ng-options="option.value as option.label for option in
                     defaultQualityOptions"
@@ -194,7 +193,7 @@
                 <label>Commit Message</label>
                 <input class="form-control" id="message" type="text"
                   maxlength="80" ng-model="file.info.message"
-                  placeholder="{{defaultMessageForFileName(file.info.title)}}">
+                  placeholder="{{defaultMessageForFile(file)}}">
               </div>
               <div class="form-group">
                 <label>This photo was modified on</label>

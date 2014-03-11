@@ -230,7 +230,7 @@ directive('allowCustomOption', ['$window', '$filter',
             if (c.length === 0) {
               $scope.defaultQualityOptions.splice(opts.length - 1, 0, {
                 value: +custom,
-                label: 'Custom (' + custom + ')'
+                label: 'Custom (' + custom + '%)'
               });
             }
             $scope.model = +custom;
@@ -437,28 +437,33 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     if (!isArray && Object.keys(obj).length === 0) return true;
     return false;
   };
-  $scope.defaultMessageForFileName = function(filename) {
-    if (typeof filename !== 'string') filename = '';
-    filename = filename.replace(/\.{1,}$/, '');
-    if (!filename) filename = 'an image';
-    return 'Upload ' + filename + '.';
+  $scope.defaultMessageForFile = function(file) {
+    var title = file.info.title;
+    if (typeof title !== 'string') title = '';
+    title = title.replace(/\.{1,}$/, '');
+    if (!title) title = 'an image';
+    return 'Upload ' + title + ' (quality: ' + file.info.quality + '%).';
   };
   $scope.defaultQualityOptions = [
     {
       value: 20,
-      label: "Bad (20)"
+      label: "Bad (20%)"
     },
     {
       value: 50,
-      label: "Half (50)"
+      label: "Half (50%)"
     },
     {
       value: 80,
-      label: "Normal (80)"
+      label: "Normal (80%)"
+    },
+    {
+      value: 90,
+      label: "Better (90%)"
     },
     {
       value: 100,
-      label: "Best (100)"
+      label: "Best (100%)"
     },
     {
       value: -1,
@@ -504,7 +509,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
         return function(dataURL) {
           var fileName = 'photos' + '/' + file.current.path;
           var message = (file.info.message ||
-            $scope.defaultMessageForFileName(file.info.title));
+            $scope.defaultMessageForFile(file));
           var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
           var deferred = $q.defer();
           GitHubAPI.UploadFile(fileName, base64str, message, false)
