@@ -429,6 +429,14 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI',
     if (!$scope.controlsEnabledOverride) return false;
     return $scope.files && $scope.files.length > 0;
   };
+  $scope.isObjectEmpty = function(obj) {
+    if (!obj) return true;
+    if (typeof obj !== 'object') return true;
+    var isArray = (obj instanceof Array);
+    if (isArray && obj.length === 0) return true;
+    if (!isArray && Object.keys(obj).length === 0) return true;
+    return false;
+  };
   $scope.defaultMessageForFileName = function(filename) {
     if (typeof filename !== 'string') filename = '';
     filename = filename.replace(/\.{1,}$/, '');
