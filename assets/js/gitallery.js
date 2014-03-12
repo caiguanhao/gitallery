@@ -56,6 +56,9 @@ run(['$window', 'CachedImageData', '$filter', 'Gitallery',
               path: null,
               exists: 'loading'
             },
+            thumb: {
+              content: null
+            },
             info: {
               title: title,
               message: null,
@@ -200,6 +203,7 @@ directive('previewImage', ['$window', 'GitHubAPI', 'Gitallery',
             get(function(err, canvas) {
             if (err) return;
             var dataURL = canvas.toDataURL($scope.file.file.type, 0.9);
+            $scope.file.thumb.content = dataURL;
             elem.append('<img class="thumb" src="' + dataURL + '">');
           });
         });
@@ -515,26 +519,10 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
             if (err) {
               deferred.reject(err);
             } else {
-              deferred.resolve(canvas);
-            }
-          });
-          return deferred.promise;
-        };
-      })(file);
-      promise = promise.then(then);
-
-      var then = (function(file) {
-        return function(canvas) {
-          var deferred = $q.defer();
-          $window.FileAPI.Image(canvas).preview(200, 200).
-            get(function(err, thumbCanvas) {
-            if (err) {
-              deferred.reject(err);
-            } else {
               var quality = file.info.quality;
               quality = Gitallery.RealQuality(quality);
               var dataURL = canvas.toDataURL(file.file.type, quality);
-              var thumbDataURL = thumbCanvas.toDataURL(file.file.type, 0.9);
+              var thumbDataURL = file.thumb.content;
               deferred.resolve({
                 photo: dataURL,
                 thumb: thumbDataURL
