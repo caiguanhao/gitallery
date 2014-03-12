@@ -64,7 +64,7 @@
       <div class="col-sm-12">
         <h3>Completed:</h3>
       </div>
-      <div class="col-sm-4" ng-repeat="item in completed">
+      <div class="col-sm-3" ng-repeat="item in completed">
         <a href="{{item.url}}" title="{{item.name}}" target="_blank"
           class="thumbnail fileitem">
           <img ng-src="{{item.image}}">
@@ -93,45 +93,45 @@
             </div>
           </div>
           <div class="form-group" ng-repeat="file in files">
-            <label class="col-sm-4 text-center">
+            <div class="col-sm-6 text-center">
               <div class="preview-image" preview-image="file"></div>
               <div ng-if="!isObjectEmpty(file.exif)">
                 <a href ng-click="file.showExif=!file.showExif">
                   {{file.showExif && 'Hide' || 'Show'}} EXIF
                 </a>
               </div>
-            </label>
-            <div class="col-sm-8">
+            </div>
+            <div class="col-sm-6">
               <div class="form-group">
-                <div>
+                <div class="info-item">
                   <label>Original SHA1</label>
                   {{file.original.sha1}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>Original File Size</label>
                   {{file.file.size|filesize}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>Original Dimensions</label>
                   {{file.width}} X {{file.height}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>Type</label>
                   {{file.file.type}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>SHA1</label>
                   {{file.current.sha1}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>File Size</label>
                   ≈ {{file.current.size|filesize}}
                 </div>
-                <div>
+                <div class="info-item">
                   <label>Location</label>
                   {{file.current.path}}
                 </div>
-                <div ng-if="!isObjectEmpty(file.exif)"
+                <div class="info-item" ng-if="!isObjectEmpty(file.exif)"
                   ng-show="file.showExif"
                   ng-repeat="(key, value) in file.exif">
                   <label>{{key}}</label>

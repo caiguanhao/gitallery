@@ -200,6 +200,12 @@ directive('previewImage', ['$window', 'GitHubAPI', 'Gitallery',
           }, function() {
             $scope.file.current.exists = false;
           });
+          $window.FileAPI.Image(canvas).preview(200, 200).
+            get(function(err, canvas) {
+            if (err) return;
+            var dataURL = canvas.toDataURL($scope.file.file.type, 0.9);
+            elem.append('<img class="thumb" src="' + dataURL + '">');
+          });
         });
       };
       $scope.$watch('file.info.rotation', function(after, before) {
@@ -246,6 +252,9 @@ directive('allowCustomOption', ['$window', '$filter',
 service('Gitallery', [function() {
   this.PhotosPath = function(path) {
     return 'photos' + '/' + path;
+  };
+  this.ThumbsPath = function(path) {
+    return 'thumbs' + '/' + path;
   };
 }]).
 
@@ -429,7 +438,8 @@ service('Accounts', ['LocalStorage', function(LocalStorage) {
 }]).
 
 controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
-  function($scope, $q, GitHubAPI, Gitallery) {
+  '$window',
+  function($scope, $q, GitHubAPI, Gitallery, $window) {
   $scope.controlsEnabledOverride = true;
   $scope.controlsEnabled = function() {
     if (!$scope.controlsEnabledOverride) return false;
@@ -495,6 +505,22 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
             if (err) {
               deferred.reject(err);
             } else {
+              deferred.resolve(canvas);
+            }
+          });
+          return deferred.promise;
+        };
+      })(file);
+      promise = promise.then(then);
+
+      var then = (function(file) {
+        return function(canvas) {
+          var deferred = $q.defer();
+          $window.FileAPI.Image(canvas).preview(200, 200).
+            get(function(err, thumbCanvas) {
+            if (err) {
+              deferred.reject(err);
+            } else {
               var quality = file.info.quality;
               if (typeof quality === 'number' &&
                 quality >= 0 && quality <= 100) {
@@ -503,27 +529,32 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
                 quality = 0.8;
               }
               var dataURL = canvas.toDataURL(file.file.type, quality);
-              deferred.resolve(dataURL);
+              var thumbDataURL = thumbCanvas.toDataURL(file.file.type, 0.9);
+              deferred.resolve({
+                photo: dataURL,
+                thumb: thumbDataURL
+              });
             }
           });
           return deferred.promise;
         };
-      })(file)
+      })(file);
       promise = promise.then(then);
 
       var then = (function(file) {
-        return function(dataURL) {
+        return function(bundle) {
           var fileName = Gitallery.PhotosPath(file.current.path);
           var message = (file.info.message ||
             $scope.defaultMessageForFile(file));
-          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
+          var base64str = bundle.photo.match(/^data:(.*?);base64,(.*)$/)[2];
           var deferred = $q.defer();
           GitHubAPI.UploadFile(fileName, base64str, message, false)
             .then(function(response) {
-              deferred.resolve({
-                dataURL: dataURL,
+              bundle.photo = {
+                dataURL: bundle.photo,
                 response: response
-              });
+              };
+              deferred.resolve(bundle);
             }, function(response) {
               deferred.reject(response);
             }, function(event) {
@@ -537,13 +568,38 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
 
       var then = (function(file) {
         return function(bundle) {
-          var content = bundle.response.data.content;
+          var fileName = Gitallery.ThumbsPath(file.current.path);
+          var message = (file.info.message ||
+            $scope.defaultMessageForFile(file));
+          var base64str = bundle.thumb.match(/^data:(.*?);base64,(.*)$/)[2];
+          var deferred = $q.defer();
+          GitHubAPI.UploadFile(fileName, base64str, message, false)
+            .then(function(response) {
+              bundle.thumb = {
+                dataURL: bundle.thumb,
+                response: response
+              };
+              deferred.resolve(bundle);
+            }, function(response) {
+              deferred.reject(response);
+            }, function(event) {
+              var progress = parseInt(100.0 * event.loaded / event.total);
+              file.info.progress = Math.min(100, progress);
+            });
+          return deferred.promise;
+        };
+      })(file);
+      promise = promise.then(then);
+
+      var then = (function(file) {
+        return function(bundle) {
+          var thumb = bundle.photo.response.data.content;
           $scope.completed = $scope.completed || [];
           $scope.completed.push({
-            name: content.name,
-            size: content.size,
-            url: content.html_url,
-            image: bundle.dataURL
+            name: thumb.name,
+            size: thumb.size,
+            url: thumb.html_url,
+            image: bundle.thumb.dataURL
           });
           var deferred = $q.defer();
           deferred.resolve();

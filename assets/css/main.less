@@ -31,10 +31,23 @@ footer {
 
 .preview-image {
   img, canvas {
-    max-width: 100%;
+    max-width: 50%;
     max-height: 150px;
     margin: 5px 0;
+    vertical-align: bottom;
   }
+  .thumb {
+    max-width: 30%;
+    margin-left: 5px;
+    max-height: 100px;
+  }
+}
+
+.info-item {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 13px;
 }
 
 .range-slider {
