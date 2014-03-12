@@ -19,8 +19,8 @@ config(['$routeProvider', '$locationProvider',
   $locationProvider.html5Mode(false);
 }]).
 
-run(['$window', 'CachedImageData', '$filter',
-  function($window, CachedImageData, $filter) {
+run(['$window', 'CachedImageData', '$filter', 'Gitallery',
+  function($window, CachedImageData, $filter, Gitallery) {
   function convertDate(date) {
     if (!date) return null;
     var d = date.split(/:|-|\s/).map(function(s) { return +s; });
@@ -33,7 +33,7 @@ run(['$window', 'CachedImageData', '$filter',
         var fileObjHash = $window.btoa(JSON.stringify(file));
         var write = function() {
           var dataURL = event.result;
-          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
+          var base64str = Gitallery.GetBase64StrFromDataURL(dataURL);
           var bin = new $window.BinaryFile($window.atob(base64str));
           var exif = $window.EXIF.readFromBinaryFile(bin);
           var hashObj = new $window.jsSHA(base64str, 'B64');
@@ -177,14 +177,10 @@ directive('previewImage', ['$window', 'GitHubAPI', 'Gitallery',
         $scope.file.current.image.get(function(err, canvas) {
           if (err) return;
           var quality = $scope.file.info.quality;
-          if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
-            quality = quality / 100;
-          } else {
-            quality = 0.8;
-          }
+          quality = Gitallery.RealQuality(quality);
           var dataURL = canvas.toDataURL($scope.file.file.type, quality);
           elem.empty().append('<img src="' + dataURL + '">');
-          var base64str = dataURL.match(/^data:(.*?);base64,(.*)$/)[2];
+          var base64str = Gitallery.GetBase64StrFromDataURL(dataURL);
           var hashObj = new $window.jsSHA(base64str, 'B64');
           var sha1 = hashObj.getHash('SHA-1', 'HEX');
           var size = Math.floor((base64str.length - 814) / 1.37);
@@ -250,6 +246,20 @@ directive('allowCustomOption', ['$window', '$filter',
 }]).
 
 service('Gitallery', [function() {
+  this.RealQuality = function(quality) {
+    if (typeof quality === 'number' && quality >= 0 && quality <= 100) {
+      quality = quality / 100;
+    } else {
+      quality = 0.8;
+    }
+    return quality;
+  };
+  this.GetBase64StrFromDataURL = function(dataURL) {
+    if (!dataURL) return null;
+    var match = dataURL.match(/^data:(.*?);base64,(.*)$/);
+    if (!match) return null
+    return match[2];
+  };
   this.PhotosPath = function(path) {
     return 'photos' + '/' + path;
   };
@@ -522,12 +532,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
               deferred.reject(err);
             } else {
               var quality = file.info.quality;
-              if (typeof quality === 'number' &&
-                quality >= 0 && quality <= 100) {
-                quality = quality / 100;
-              } else {
-                quality = 0.8;
-              }
+              quality = Gitallery.RealQuality(quality);
               var dataURL = canvas.toDataURL(file.file.type, quality);
               var thumbDataURL = thumbCanvas.toDataURL(file.file.type, 0.9);
               deferred.resolve({
@@ -546,7 +551,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
           var fileName = Gitallery.PhotosPath(file.current.path);
           var message = (file.info.message ||
             $scope.defaultMessageForFile(file));
-          var base64str = bundle.photo.match(/^data:(.*?);base64,(.*)$/)[2];
+          var base64str = Gitallery.GetBase64StrFromDataURL(bundle.photo);
           var deferred = $q.defer();
           GitHubAPI.UploadFile(fileName, base64str, message, false)
             .then(function(response) {
@@ -571,7 +576,7 @@ controller('MainController', ['$scope', '$q', 'GitHubAPI', 'Gitallery',
           var fileName = Gitallery.ThumbsPath(file.current.path);
           var message = (file.info.message ||
             $scope.defaultMessageForFile(file));
-          var base64str = bundle.thumb.match(/^data:(.*?);base64,(.*)$/)[2];
+          var base64str = Gitallery.GetBase64StrFromDataURL(bundle.thumb);
           var deferred = $q.defer();
           GitHubAPI.UploadFile(fileName, base64str, message, false)
             .then(function(response) {
